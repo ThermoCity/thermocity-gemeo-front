@@ -1,0 +1,37 @@
+/* Tokens do brandbook ThermoCity ("A — Azul estrutural"), modos claro e escuro. */
+:root {
+  --azul: #1d2f36;
+  --laranja: #e16c42;
+  --off-white: #f5f0e6;
+
+  --fundo: #eef2f4;
+  --superficie: #ffffff;
+  --borda: #d5dde0;
+  --texto: #1d2f36;
+  --texto-suave: #55666d;
+  --navegacao: #1d2f36;
+  --texto-navegacao: #f5f0e6;
+  --destaque: #e16c42;
+  --sombra-foco: 0 0 0 3px rgba(225, 108, 66, 0.45);
+  --mapa-fundo: #e4eaec;
+  --contorno-setor: rgba(29, 47, 54, 0.35);
+  --sucesso: #2f6b4f;
+  --alerta-fundo: #fbe6dc;
+
+  --raio: 10px;
+  --fonte: Arial, Helvetica, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-tema='escuro'] {
+  --fundo: #242b30;
+  --superficie: #303b42;
+  --borda: #44525a;
+  --texto: #f7f9fa;
+  --texto-suave: #b4c0c5;
+  --mapa-fundo: #2a3339;
+  --contorno-setor: rgba(245, 240, 230, 0.35);
+  --sucesso: #8fd0ae;
+  --alerta-fundo: #4a3129;
+  color-scheme: dark;
+}
