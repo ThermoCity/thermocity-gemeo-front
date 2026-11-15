@@ -66,8 +66,9 @@ export function MapaSetores({ setores, servicos, selecionado, onSelecionar, dest
   const aoRolar = (e: WheelEvent<SVGSVGElement>) => zoom(e.deltaY > 0 ? 1.2 : 1 / 1.2, paraMundo(e.clientX, e.clientY))
 
   const aoPressionar = (e: PointerEvent<SVGSVGElement>) => {
+    // A captura do ponteiro só começa quando o mouse realmente arrasta (aoMover): capturar já no
+    // pressionar faria o clique cair no <svg> e não no setor, e o setor nunca seria selecionado.
     arraste.current = { x: e.clientX, y: e.clientY, vista, moveu: false }
-    e.currentTarget.setPointerCapture(e.pointerId)
   }
   const aoMover = (e: PointerEvent<SVGSVGElement>) => {
     const a = arraste.current
@@ -76,7 +77,11 @@ export function MapaSetores({ setores, servicos, selecionado, onSelecionar, dest
     const escala = Math.max(a.vista.w / r.width, a.vista.h / r.height)
     const dx = (e.clientX - a.x) * escala
     const dy = (e.clientY - a.y) * escala
-    if (Math.abs(e.clientX - a.x) + Math.abs(e.clientY - a.y) > 3) a.moveu = true
+    if (!a.moveu && Math.abs(e.clientX - a.x) + Math.abs(e.clientY - a.y) > 3) {
+      a.moveu = true
+      e.currentTarget.setPointerCapture(e.pointerId)
+    }
+    if (!a.moveu) return
     setVista({ ...a.vista, x: a.vista.x - dx, y: a.vista.y - dy })
   }
   const aoSoltar = () => {

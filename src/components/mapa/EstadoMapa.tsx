@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTentativaAutomatica } from '../../hooks/useTentativaAutomatica'
 
 interface Props {
   carregando: boolean
@@ -9,9 +10,10 @@ interface Props {
 /** Segundos até avisar que a API pode estar "acordando" (Azure desliga a API depois de um tempo parada). */
 const AVISO_DEMORA_S = 8
 
-/** Ocupa a área do mapa enquanto os setores carregam ou quando a busca falha. */
+/** Ocupa a área do mapa enquanto os setores carregam ou quando a busca falha (e tenta de novo sozinho). */
 export function EstadoMapa({ carregando, erro, onTentarDeNovo }: Props) {
   const segundos = useSegundosDesde(carregando)
+  const restante = useTentativaAutomatica(carregando ? null : erro, onTentarDeNovo)
 
   if (carregando) {
     return (
@@ -33,8 +35,9 @@ export function EstadoMapa({ carregando, erro, onTentarDeNovo }: Props) {
       <div className="mapa-estado" role="alert">
         <strong className="estado-erro">Não foi possível carregar o mapa</strong>
         <span className="mapa-estado-detalhe">{erro}</span>
+        {restante != null && <span className="mapa-estado-detalhe">Tentando de novo em {restante} s…</span>}
         <button type="button" className="botao-primario" onClick={onTentarDeNovo}>
-          Tentar de novo
+          Tentar agora
         </button>
       </div>
     )

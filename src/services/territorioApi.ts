@@ -1,5 +1,5 @@
 import { config } from '../config/env'
-import type { Servico, SetorFeature, SetoresGeoJson } from '../types'
+import type { Servico, ServicoProximo, ServicosDoSetor, SetorFeature, SetoresGeoJson } from '../types'
 import { requisitar } from './http'
 
 /** Formato devolvido pela base territorial em GET /setores/geojson. */
@@ -21,7 +21,20 @@ interface ServicoApi {
   lat: number
   lon: number
   setorCodigo: string | null
+  distanciaMetros?: number | null
 }
+
+interface ServicosDoSetorApi {
+  codigoSetor: string
+  ubsMaisProxima: ServicoApi | null
+  refugioMaisProximo: ServicoApi | null
+}
+
+const paraServicoProximo = (s: ServicoApi | null): ServicoProximo | null =>
+  s && { id: s.id, nome: s.nome, tipo: s.tipo, revisao: s.revisao, lat: s.lat, lon: s.lon, setorCodigo: s.setorCodigo, distanciaMetros: s.distanciaMetros ?? null }
+
+/** Detalhe de cada setor já consultado (um clique repetido não chama a API de novo; falhas não ficam guardadas). */
+const servicosPorSetor = new Map<string, Promise<ServicosDoSetor>>()
 
 /**
  * Guarda a resposta de cada chamada para que pedidos repetidos (o React chama tudo duas vezes em
@@ -73,4 +86,22 @@ export const territorioApi = {
     const dados = await requisitar<ServicoApi[]>(config.apiTerritorioUrl, '/servicos')
     return dados.map(({ id, nome, tipo, revisao, lat, lon, setorCodigo }) => ({ id, nome, tipo, revisao, lat, lon, setorCodigo }))
   }),
+
+  servicosDoSetor: (codigo: string): Promise<ServicosDoSetor> => {
+    let pedido = servicosPorSetor.get(codigo)
+    if (!pedido) {
+      pedido = requisitar<ServicosDoSetorApi>(config.apiTerritorioUrl, `/setores/${encodeURIComponent(codigo)}/servicos`)
+        .then((d) => ({
+          codigoSetor: d.codigoSetor,
+          ubsMaisProxima: paraServicoProximo(d.ubsMaisProxima),
+          refugioMaisProximo: paraServicoProximo(d.refugioMaisProximo),
+        }))
+        .catch((erro: unknown) => {
+          servicosPorSetor.delete(codigo)
+          throw erro
+        })
+      servicosPorSetor.set(codigo, pedido)
+    }
+    return pedido
+  },
 }

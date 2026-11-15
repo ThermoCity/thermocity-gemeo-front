@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AvisoServicos } from '../components/mapa/AvisoServicos'
 import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import type { EstadoDados } from '../hooks/useDados'
@@ -58,6 +59,9 @@ export function SimulacaoPage({ setores, servicos }: Props) {
         </section>
         <div className="cartao cartao-mapa">
           <EstadoMapa carregando={setores.carregando} erro={setores.erro} onTentarDeNovo={setores.recarregar} />
+          {setores.dados && !setores.carregando && (
+            <AvisoServicos erro={servicos.erro} carregando={servicos.carregando} onTentarDeNovo={servicos.recarregar} />
+          )}
           {setores.dados && !setores.carregando && (
             <MapaSetores
               setores={setores.dados.features}

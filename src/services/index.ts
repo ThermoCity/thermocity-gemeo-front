@@ -10,7 +10,7 @@ import { territorioApi } from './territorioApi'
  * - Usuário, nível de calor, estado e lista do dia: mocks enquanto VITE_USE_MOCKS=true (APIs ainda não publicadas).
  */
 const territorio = config.usarMocksTerritorio
-  ? { setoresGeoJson: mockApi.setoresGeoJson, servicos: mockApi.servicos }
+  ? { setoresGeoJson: mockApi.setoresGeoJson, servicos: mockApi.servicos, servicosDoSetor: mockApi.servicosDoSetor }
   : territorioApi
 
 const restante = config.usarMocks

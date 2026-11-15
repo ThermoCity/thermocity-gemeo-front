@@ -63,6 +63,19 @@ export interface Servico {
   setorCodigo: string | null
 }
 
+/** Serviço com a distância em linha reta (metros) até o ponto de referência do setor. */
+export interface ServicoProximo extends Servico {
+  distanciaMetros: number | null
+}
+
+/** UBS e refúgio mais próximos de um setor (GET /setores/{codigo}/servicos). */
+export interface ServicosDoSetor {
+  codigoSetor: string
+  ubsMaisProxima: ServicoProximo | null
+  /** Só refúgios públicos confirmados. */
+  refugioMaisProximo: ServicoProximo | null
+}
+
 export type StatusContato = 'PENDENTE' | 'CONTATADO' | 'PRECISA_AJUDA' | 'NAO_ATENDEU'
 
 export interface PessoaLista {

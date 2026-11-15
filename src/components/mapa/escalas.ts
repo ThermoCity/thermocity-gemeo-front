@@ -13,6 +13,12 @@ export const NOMES_NC: Record<number, string> = { 1: 'Normal', 2: 'Atenção', 3
 /** Texto legível sobre cada cor NC (azul no claro, off-white no escuro). */
 export const TEXTO_NC: Record<number, string> = { 1: '#1D2F36', 2: '#1D2F36', 3: '#1D2F36', 4: '#F5F0E6', 5: '#F5F0E6' }
 
+/** Rótulo de cada nota de calor do setor (quintis da temperatura de superfície). */
+export const ROTULOS_NOTA: Record<number, string> = { 1: '20% mais frescos', 2: 'fresco', 3: 'intermediário', 4: 'quente', 5: '20% mais quentes' }
+
+/** Vulnerabilidade de cada grupo do IPVS, como na legenda do mapa (5 e 6 = alta). */
+export const ROTULOS_IPVS: Record<number, string> = { 1: 'baixíssima', 2: 'muito baixa', 3: 'baixa', 4: 'média', 5: 'alta', 6: 'alta' }
+
 export type CamadaPreenchimento = 'calor' | 'ipvs' | 'idosos'
 
 interface ItemLegenda {
@@ -27,7 +33,7 @@ const SEM_DADO = '#CDD2D4'
 export const CAMADAS: Record<CamadaPreenchimento, { titulo: string; legenda: ItemLegenda[]; cor: (p: SetorProps) => string }> = {
   calor: {
     titulo: 'Nota de calor do setor',
-    legenda: [1, 2, 3, 4, 5].map((n) => ({ cor: CORES_NC[n], rotulo: `${n} – ${['20% mais frescos', 'fresco', 'intermediário', 'quente', '20% mais quentes'][n - 1]}` })),
+    legenda: [1, 2, 3, 4, 5].map((n) => ({ cor: CORES_NC[n], rotulo: `${n} – ${ROTULOS_NOTA[n]}` })),
     cor: (p) => (p.classeCalor ? CORES_NC[p.classeCalor] : SEM_DADO),
   },
   ipvs: {

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { AvisoServicos } from '../components/mapa/AvisoServicos'
 import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import { ContatosPrioritarios } from '../components/painel/ContatosPrioritarios'
@@ -34,6 +35,9 @@ export function AgoraPage({ setores, servicos, clima, estado, lista, seloMapa }:
         <div className="cartao cartao-mapa">
           <EstadoMapa carregando={setores.carregando} erro={setores.erro} onTentarDeNovo={setores.recarregar} />
           {setores.dados && !setores.carregando && (
+            <AvisoServicos erro={servicos.erro} carregando={servicos.carregando} onTentarDeNovo={servicos.recarregar} />
+          )}
+          {setores.dados && !setores.carregando && (
             <MapaSetores
               setores={setores.dados.features}
               servicos={servicos.dados ?? []}
@@ -45,7 +49,7 @@ export function AgoraPage({ setores, servicos, clima, estado, lista, seloMapa }:
           )}
         </div>
         <div className="coluna-lateral">
-          {setorSel && <DetalheSetor setor={setorSel} servicos={servicos.dados ?? []} onFechar={() => setSelecionado(null)} />}
+          {setorSel && <DetalheSetor key={setorSel.codigo} setor={setorSel} onFechar={() => setSelecionado(null)} />}
           <ContatosPrioritarios
             pessoas={lista.dados}
             carregando={lista.carregando}

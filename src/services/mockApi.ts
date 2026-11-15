@@ -1,4 +1,4 @@
-import type { EstadoGemeo, PessoaLista, Servico, SetoresGeoJson, SituacaoClima, StatusContato, Usuario } from '../types'
+import type { EstadoGemeo, PessoaLista, Servico, ServicoProximo, ServicosDoSetor, SetoresGeoJson, SituacaoClima, StatusContato, Usuario } from '../types'
 
 /**
  * Dados DEMONSTRATIVOS enquanto as APIs não estão prontas (arquivos em public/mocks).
@@ -13,9 +13,15 @@ const carregarJson = async <T,>(arquivo: string): Promise<T> => {
 
 let cache: Promise<{ setores: SetoresGeoJson; servicos: Servico[]; lista: PessoaLista[] }> | null = null
 const dadosBase = () => {
-  cache ??= Promise.all([carregarJson<SetoresGeoJson>('setores.geo.json'), carregarJson<Servico[]>('servicos.json')]).then(
-    ([setores, servicos]) => ({ setores, servicos, lista: montarLista(setores, servicos) }),
-  )
+  if (!cache) {
+    cache = Promise.all([carregarJson<SetoresGeoJson>('setores.geo.json'), carregarJson<Servico[]>('servicos.json')]).then(
+      ([setores, servicos]) => ({ setores, servicos, lista: montarLista(setores, servicos) }),
+    )
+    // Falhou: descarta, para o "Tentar de novo" buscar os arquivos outra vez.
+    cache.catch(() => {
+      cache = null
+    })
+  }
   return cache
 }
 
@@ -69,6 +75,22 @@ function montarLista(setores: SetoresGeoJson, servicos: Servico[]): PessoaLista[
     .map((p, i) => ({ ...p, posicao: i + 1 }))
 }
 
+/** Distância em linha reta (fórmula de haversine), em metros. */
+function distanciaMetros(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const rad = Math.PI / 180
+  const a = Math.sin(((lat2 - lat1) * rad) / 2) ** 2 + Math.cos(lat1 * rad) * Math.cos(lat2 * rad) * Math.sin(((lon2 - lon1) * rad) / 2) ** 2
+  return 2 * 6371000 * Math.asin(Math.sqrt(a))
+}
+
+function maisProximo(candidatos: Servico[], lat: number, lon: number): ServicoProximo | null {
+  let melhor: ServicoProximo | null = null
+  for (const s of candidatos) {
+    const d = Math.round(distanciaMetros(lat, lon, s.lat, s.lon))
+    if (!melhor || d < (melhor.distanciaMetros ?? Infinity)) melhor = { ...s, distanciaMetros: d }
+  }
+  return melhor
+}
+
 export const mockApi = {
   usuarioAtual: () => espera<Usuario>({ nome: 'Gestor demonstração', email: 'gestor@thermocity.demo', papel: 'GESTOR' }, 50),
   setoresGeoJson: () => dadosBase().then((d) => espera(d.setores)),
@@ -96,4 +118,18 @@ export const mockApi = {
       atualizadoEm: agora(),
     })),
   listaDoDia: () => dadosBase().then((d) => espera(d.lista)),
+  servicosDoSetor: (codigo: string) =>
+    dadosBase().then(({ setores, servicos }) => {
+      const setor = setores.features.find((f) => f.id === codigo)
+      if (!setor) throw new Error('Setor não encontrado')
+      // No mock, o ponto de referência é a média dos vértices do primeiro anel (na API vem do IBGE).
+      const anel = setor.geometry.coordinates[0][0]
+      const lon = anel.reduce((t, c) => t + c[0], 0) / anel.length
+      const lat = anel.reduce((t, c) => t + c[1], 0) / anel.length
+      return espera<ServicosDoSetor>({
+        codigoSetor: codigo,
+        ubsMaisProxima: maisProximo(servicos.filter((s) => s.tipo === 'UBS'), lat, lon),
+        refugioMaisProximo: maisProximo(servicos.filter((s) => s.tipo === 'REFUGIO' && s.revisao === 'manter'), lat, lon),
+      })
+    }),
 }
