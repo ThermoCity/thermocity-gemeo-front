@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  readonly VITE_API_TERRITORIO_URL?: string
+  readonly VITE_USE_MOCKS_TERRITORIO?: string
   readonly VITE_API_JAVA_URL?: string
   readonly VITE_API_CLIMA_URL?: string
   readonly VITE_USE_MOCKS?: string

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import { ContatosPrioritarios } from '../components/painel/ContatosPrioritarios'
 import { DetalheSetor } from '../components/painel/DetalheSetor'
@@ -31,13 +32,8 @@ export function AgoraPage({ setores, servicos, clima, estado, lista, seloMapa }:
       )}
       <div className="grade-agora">
         <div className="cartao cartao-mapa">
-          {setores.carregando && <p className="estado-vazio">Carregando mapa…</p>}
-          {setores.erro && (
-            <p className="estado-erro">
-              {setores.erro} <button type="button" onClick={setores.recarregar}>Tentar de novo</button>
-            </p>
-          )}
-          {setores.dados && (
+          <EstadoMapa carregando={setores.carregando} erro={setores.erro} onTentarDeNovo={setores.recarregar} />
+          {setores.dados && !setores.carregando && (
             <MapaSetores
               setores={setores.dados.features}
               servicos={servicos.dados ?? []}

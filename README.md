@@ -26,11 +26,13 @@ Abra o endereço que o Vite mostrar (normalmente http://localhost:5173).
 
 | Variável | Padrão | Para que serve |
 |---|---|---|
-| `VITE_USE_MOCKS` | `true` | `true` usa `src/mocks`; `false` chama as APIs |
-| `VITE_API_JAVA_URL` | `http://localhost:8080` | API Java (setores, lista do dia, contatos, simulações) |
+| `VITE_API_TERRITORIO_URL` | `https://thermocity-base-territorial-api.azurewebsites.net` | base territorial (setores e serviços do mapa) |
+| `VITE_USE_MOCKS_TERRITORIO` | `false` | `true` usa os setores e serviços de `public/mocks` (offline) |
+| `VITE_USE_MOCKS` | `true` | `true` usa mocks para usuário, nível de calor, estado e lista do dia; `false` chama as APIs |
+| `VITE_API_JAVA_URL` | `http://localhost:8080` | API Java do gêmeo (lista do dia, contatos, estado, simulações) |
 | `VITE_API_CLIMA_URL` | `http://localhost:5000` | API de clima .NET (nível de calor) |
 | `VITE_DEV_TOKEN` | vazio | JWT de um GESTOR enquanto não há tela de login |
-| `VITE_API_TIMEOUT_MS` | `10000` | tempo máximo de cada requisição |
+| `VITE_API_TIMEOUT_MS` | `90000` | tempo máximo de cada requisição (a API no Azure demora mais na primeira chamada) |
 
 Nenhum segredo fica no código. O `.env.local` está no `.gitignore` do Vite.
 
@@ -39,7 +41,7 @@ Nenhum segredo fica no código. O `.env.local` está no `.gitignore` do Vite.
 ```
 src/
   config/env.ts          leitura das variáveis de ambiente
-  services/              http.ts (JWT, timeout, erros), javaApi.ts, climaApi.ts, mockApi.ts, index.ts (escolhe mock ou API)
+  services/              http.ts (JWT, timeout, erros), territorioApi.ts, javaApi.ts, climaApi.ts, mockApi.ts, index.ts (escolhe mock ou API)
   auth/AuthContext.tsx   sessão do usuário e bloqueio para quem não é GESTOR
   hooks/useDados.ts      carregamento assíncrono com estados de carregando e erro
   components/
@@ -82,3 +84,14 @@ nível de calor da cidade (NC1–NC5), e a legenda deixa isso explícito.
 ## Uso de IA
 
 Código gerado com apoio do Claude (Anthropic) e revisado pela equipe.
+
+## De onde vêm os dados
+
+| Dado | Origem |
+|---|---|
+| Setores (polígonos, nota de calor, IPVS, população 60+ e 70+) | `GET /setores/geojson` da base territorial no Azure |
+| UBS e refúgios do mapa | `GET /servicos` da base territorial no Azure |
+| Usuário, nível de calor, estado do gêmeo e lista do dia | mocks (`VITE_USE_MOCKS=true`) até as APIs serem publicadas |
+
+A base territorial só aceita chamadas do navegador vindas das origens em `CORS_ORIGENS` (no App Service).
+O padrão libera `http://localhost:5173`; ao publicar o painel, inclua a URL dele nessa variável.

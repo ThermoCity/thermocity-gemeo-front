@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import type { EstadoDados } from '../hooks/useDados'
 import type { Servico, SetoresGeoJson } from '../types'
@@ -56,7 +57,8 @@ export function SimulacaoPage({ setores, servicos }: Props) {
           <p className="nota">Os controles serão ligados ao motor de simulação da API Java (POST /simulacoes).</p>
         </section>
         <div className="cartao cartao-mapa">
-          {setores.dados && (
+          <EstadoMapa carregando={setores.carregando} erro={setores.erro} onTentarDeNovo={setores.recarregar} />
+          {setores.dados && !setores.carregando && (
             <MapaSetores
               setores={setores.dados.features}
               servicos={servicos.dados ?? []}

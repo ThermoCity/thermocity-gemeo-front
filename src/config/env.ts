@@ -5,14 +5,20 @@
 const env = import.meta.env
 
 export const config = {
-  /** API Java (base-territorial / gêmeo): setores, lista do dia, contatos, simulações. */
+  /** API da base territorial (Java): setores com calor, IPVS e população idosa, UBS e refúgios. */
+  apiTerritorioUrl: (env.VITE_API_TERRITORIO_URL ?? 'https://thermocity-base-territorial-api.azurewebsites.net').replace(/\/$/, ''),
+  /** true = usa os setores e serviços mockados de public/mocks em vez da base territorial (uso offline). */
+  usarMocksTerritorio: (env.VITE_USE_MOCKS_TERRITORIO ?? 'false') === 'true',
+  /** API Java do gêmeo (ainda não publicada): lista do dia, contatos, estado, simulações. */
   apiJavaUrl: (env.VITE_API_JAVA_URL ?? 'http://localhost:8080').replace(/\/$/, ''),
   /** API de clima (.NET): nível de calor atual e previsto. */
   apiClimaUrl: (env.VITE_API_CLIMA_URL ?? 'http://localhost:5000').replace(/\/$/, ''),
-  /** true = usa os dados mockados de src/mocks (padrão enquanto as APIs não estão prontas). */
+  /** true = usa os dados mockados para o que ainda não tem API: usuário, nível de calor, estado e lista do dia. */
   usarMocks: (env.VITE_USE_MOCKS ?? 'true') !== 'false',
   /** Token JWT de desenvolvimento, usado enquanto não há tela de login. */
   tokenDev: env.VITE_DEV_TOKEN ?? '',
   /** Tempo máximo de cada requisição, em milissegundos. */
-  timeoutMs: Number(env.VITE_API_TIMEOUT_MS ?? 10000),
+  // 90 s por padrão: no Azure, a primeira chamada depois de um tempo parada (ou logo após um deploy)
+  // acorda a API, que ainda monta o GeoJSON dos setores; isso pode passar de 30 s.
+  timeoutMs: Number(env.VITE_API_TIMEOUT_MS ?? 90000),
 } as const

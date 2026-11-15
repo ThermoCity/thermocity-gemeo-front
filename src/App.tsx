@@ -70,7 +70,7 @@ function Painel() {
             clima={clima}
             estado={estado}
             lista={lista}
-            seloMapa={config.usarMocks ? 'Dados demonstrativos' : undefined}
+            seloMapa={config.usarMocksTerritorio ? 'Dados demonstrativos' : undefined}
           />
         ) : (
           <SimulacaoPage setores={setores} servicos={servicos} />

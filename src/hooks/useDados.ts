@@ -17,6 +17,7 @@ export function useDados<T>(buscar: () => Promise<T>): EstadoDados<T> {
   useEffect(() => {
     let ativo = true
     setCarregando(true)
+    setErro(null)
     buscar()
       .then((resultado) => {
         if (!ativo) return
