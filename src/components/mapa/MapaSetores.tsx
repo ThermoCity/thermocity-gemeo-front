@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from 'react'
 import type { Servico, SetorFeature, SetorProps } from '../../types'
-import { CAMADAS, type CamadaPreenchimento } from './escalas'
+import { CAMADAS, type DefinicaoCamada } from './escalas'
 import { caixaDe, caminhoSetor, METROS_POR_UNIDADE, projetar, type Caixa } from './projecao'
 
 interface Props {
@@ -12,12 +12,29 @@ interface Props {
   destacados?: Set<string>
   /** Rótulo no canto do mapa, ex.: "Dados demonstrativos" ou "Simulação". */
   selo?: string
+  /** Camadas que podem pintar os setores (padrão: as do território) e a que abre selecionada. */
+  camadas?: Record<string, DefinicaoCamada>
+  camadaInicial?: string
+  /** Linhas a mais na dica do setor ao passar o mouse (ex.: números da simulação no dia). */
+  linhasDica?: (p: SetorProps) => string[]
 }
 
 const ESCALAS_BARRA = [100, 200, 500, 1000, 2000, 5000, 10000]
 
-export function MapaSetores({ setores, servicos, selecionado, onSelecionar, destacados, selo }: Props) {
-  const [camada, setCamada] = useState<CamadaPreenchimento>('calor')
+export function MapaSetores({
+  setores,
+  servicos,
+  selecionado,
+  onSelecionar,
+  destacados,
+  selo,
+  camadas = CAMADAS,
+  camadaInicial = 'calor',
+  linhasDica,
+}: Props) {
+  const [escolhida, setCamada] = useState<string>(camadaInicial)
+  // se a camada escolhida deixar de existir (ex.: saiu da simulação), volta para a inicial
+  const camada = camadas[escolhida] ? escolhida : camadas[camadaInicial] ? camadaInicial : Object.keys(camadas)[0]
   const [mostrarUbs, setMostrarUbs] = useState(true)
   const [mostrarRefugios, setMostrarRefugios] = useState(true)
   const [hover, setHover] = useState<{ p: SetorProps; x: number; y: number } | null>(null)
@@ -100,17 +117,19 @@ export function MapaSetores({ setores, servicos, selecionado, onSelecionar, dest
   const traco = vista.w / larguraPx
 
   const pontos = servicos.filter((s) => (s.tipo === 'UBS' ? mostrarUbs : mostrarRefugios))
-  const def = CAMADAS[camada]
+  const def = camadas[camada]
 
   return (
     <div className="mapa">
       <div className="mapa-barra">
         <label className="campo-inline">
           <span>Camada</span>
-          <select value={camada} onChange={(e) => setCamada(e.target.value as CamadaPreenchimento)}>
-            <option value="calor">Nota de calor do setor</option>
-            <option value="ipvs">Vulnerabilidade (IPVS)</option>
-            <option value="idosos">Idosos 60+</option>
+          <select value={camada} onChange={(e) => setCamada(e.target.value)}>
+            {Object.entries(camadas).map(([id, c]) => (
+              <option key={id} value={id}>
+                {c.titulo}
+              </option>
+            ))}
           </select>
         </label>
         <label className="campo-check">
@@ -207,6 +226,9 @@ export function MapaSetores({ setores, servicos, selecionado, onSelecionar, dest
             <span>Nota de calor: {hover.p.classeCalor ?? '—'}</span>
             <span>IPVS: {hover.p.ipvsGrupo ?? 'sem classificação'}</span>
             <span>Idosos 60+: {hover.p.pop60mais ?? 'suprimido'}</span>
+            {linhasDica?.(hover.p).map((l) => (
+              <span key={l}>{l}</span>
+            ))}
           </div>
         )}
       </div>

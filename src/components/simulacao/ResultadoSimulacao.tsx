@@ -1,14 +1,22 @@
 import type { SimulacaoDetalhe } from '../../types'
 import { SeloNivel } from '../painel/Indicadores'
 import { formatar } from './cenario'
+import { LinhaDoTempo } from './LinhaDoTempo'
 
 const REFUGIOS = { TODOS: 'todos os refúgios', PUBLICOS: 'só refúgios públicos', NENHUM: 'nenhum refúgio' } as const
 
 const numero = (n: number | null) => (n == null ? '—' : n.toLocaleString('pt-BR'))
 const data = (iso: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}` : null)
 
-/** Resultado da simulação, dia a dia: nível de calor, lista, contatos e acesso a refúgio. */
-export function ResultadoSimulacao({ simulacao: s }: { simulacao: SimulacaoDetalhe }) {
+interface Props {
+  simulacao: SimulacaoDetalhe
+  /** Dia mostrado no mapa; clicar num dia da linha do tempo ou da tabela troca o dia. */
+  diaSelecionado: number
+  onDia: (dia: number) => void
+}
+
+/** Resultado da simulação, dia a dia: linha do tempo (nível, lista, contatos) e a tabela com os números. */
+export function ResultadoSimulacao({ simulacao: s, diaSelecionado, onDia }: Props) {
   const c = s.cenario
   return (
     <section className="cartao resultado-simulacao" aria-labelledby="titulo-resultado" tabIndex={-1}>
@@ -30,6 +38,11 @@ export function ResultadoSimulacao({ simulacao: s }: { simulacao: SimulacaoDetal
         </p>
       )}
 
+      <p className="nota">
+        Linha do tempo: barra = pessoas na lista do dia (escuro = contatadas, laranja = pendentes). Clique num dia para vê-lo no mapa.
+      </p>
+      <LinhaDoTempo dias={s.dias} diaSelecionado={diaSelecionado} onDia={onDia} />
+
       <div className="tabela-rolagem">
         <table className="tabela-resultado">
           <thead>
@@ -45,9 +58,11 @@ export function ResultadoSimulacao({ simulacao: s }: { simulacao: SimulacaoDetal
           </thead>
           <tbody>
             {s.dias.map((d) => (
-              <tr key={d.dia}>
+              <tr key={d.dia} className={d.dia === diaSelecionado ? 'linha-ativa' : undefined}>
                 <th scope="row">
-                  {d.dia}
+                  <button type="button" className="botao-link" onClick={() => onDia(d.dia)} aria-label={`Ver o dia ${d.dia} no mapa`}>
+                    {d.dia}
+                  </button>
                   {data(d.data) && <small> · {data(d.data)}</small>}
                 </th>
                 <td>

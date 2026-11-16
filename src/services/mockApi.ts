@@ -10,6 +10,7 @@ import type {
   ServicoProximo,
   ServicosDoSetor,
   SetoresGeoJson,
+  SetorSimulado,
   SimulacaoDetalhe,
   SimulacaoResumo,
   SituacaoClima,
@@ -162,6 +163,35 @@ function modeloDemo(acrescimo: number): ModeloOndaCalor {
 
 const simulacoesDemo = new Map<number, SimulacaoDetalhe>()
 
+/** Reparte os totais fictícios de cada dia entre os setores, pela população 60+ (só para a demonstração). */
+function distribuirPorSetor(
+  dias: SimulacaoDetalhe['dias'],
+  geo: SetoresGeoJson,
+  c: CenarioSimulacao,
+): SetorSimulado[] {
+  const setores = geo.features.filter((f) => !c.distrito || f.properties.distrito === c.distrito)
+  const total = setores.reduce((t, f) => t + (f.properties.pop60mais ?? 0), 0) || 1
+  const lst = setores.map((f) => f.properties.lstVeraoC).filter((v): v is number => v != null)
+  const media = lst.reduce((t, v) => t + v, 0) / (lst.length || 1)
+  return dias.flatMap((d) =>
+    setores.map((f) => {
+      const peso = (f.properties.pop60mais ?? 0) / total
+      const lista = Math.round((d.pessoasNaLista ?? 0) * peso)
+      const pendentes = Math.min(lista, Math.round((d.pendentes ?? 0) * peso))
+      const p = f.properties
+      return {
+        dia: d.dia,
+        codigoSetor: p.codigo,
+        pessoasNaLista: lista,
+        contatadas: lista - pendentes,
+        pendentes,
+        semRefugio800m: Math.min(lista, Math.round((d.semRefugio800m ?? 0) * peso)),
+        icEstimadoC: p.lstVeraoC == null ? null : Math.round((d.icMaxC + c.fatorK * (p.lstVeraoC - media)) * 100) / 100,
+      }
+    }),
+  )
+}
+
 export const mockApi = {
   usuarioAtual: () => espera<Usuario>({ nome: 'Gestor demonstração', email: 'gestor@thermocity.demo', papel: 'GESTOR' }, 50),
   setoresGeoJson: () => dadosBase().then((d) => espera(d.setores)),
@@ -196,7 +226,7 @@ export const mockApi = {
       maxHistoricoC: MAX_HISTORICO_DEMO,
       modelos: [0, 1, 3].map(modeloDemo),
     }),
-  criarSimulacao: (c: CenarioSimulacao) => {
+  criarSimulacao: (c: CenarioSimulacao) => dadosBase().then(({ setores }) => {
     const id = simulacoesDemo.size + 1
     const nc = niveis(c.icMaxPorDia)
     const capacidade = c.agentesPorUbs * c.contatosPorAgenteDia * 36
@@ -221,14 +251,15 @@ export const mockApi = {
       },
       versaoLimiar: 'A707-2003-2026-v1', maxHistoricoIcC: MAX_HISTORICO_DEMO,
       nivelMaximo: Math.max(...nc) as NivelCalor, diasExtrapolados: dias.filter((d) => d.extrapolacao).length,
-      dias, setores: [],
+      dias, setores: distribuirPorSetor(dias, setores, c),
     }
     simulacoesDemo.set(id, detalhe)
     return espera<SimulacaoResumo>({ id, nome: detalhe.nome, status: 'CONCLUIDA', qtdDias: dias.length, nivelMaximo: detalhe.nivelMaximo, diasExtrapolados: detalhe.diasExtrapolados }, 600)
-  },
-  simulacao: (id: number, _dia?: number) => {
+  }),
+  simulacao: (id: number, dia?: number) => {
     const s = simulacoesDemo.get(id)
-    return s ? espera(s) : Promise.reject(new Error('Simulação não encontrada'))
+    if (!s) return Promise.reject(new Error('Simulação não encontrada'))
+    return espera({ ...s, setores: dia ? s.setores.filter((x) => x.dia === dia) : s.setores })
   },
   servicosDoSetor: (codigo: string) =>
     dadosBase().then(({ setores, servicos }) => {

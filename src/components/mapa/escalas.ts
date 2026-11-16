@@ -19,18 +19,24 @@ export const ROTULOS_NOTA: Record<number, string> = { 1: '20% mais frescos', 2: 
 /** Vulnerabilidade de cada grupo do IPVS, como na legenda do mapa (5 e 6 = alta). */
 export const ROTULOS_IPVS: Record<number, string> = { 1: 'baixíssima', 2: 'muito baixa', 3: 'baixa', 4: 'média', 5: 'alta', 6: 'alta' }
 
-export type CamadaPreenchimento = 'calor' | 'ipvs' | 'idosos'
-
-interface ItemLegenda {
+export interface ItemLegenda {
   cor: string
   rotulo: string
 }
 
+/** Uma forma de pintar os setores: título, legenda e a cor de cada setor. */
+export interface DefinicaoCamada {
+  titulo: string
+  legenda: ItemLegenda[]
+  cor: (p: SetorProps) => string
+}
+
 /** Escala azul (derivações do Azul Escuro) para vulnerabilidade e população. */
 const AZUIS = ['#DCE4E7', '#B3C3CA', '#7F98A3', '#4E6874', '#1D2F36']
-const SEM_DADO = '#CDD2D4'
+export const SEM_DADO = '#CDD2D4'
 
-export const CAMADAS: Record<CamadaPreenchimento, { titulo: string; legenda: ItemLegenda[]; cor: (p: SetorProps) => string }> = {
+/** Camadas do território (sempre disponíveis no mapa). */
+export const CAMADAS: Record<string, DefinicaoCamada> = {
   calor: {
     titulo: 'Nota de calor do setor',
     legenda: [1, 2, 3, 4, 5].map((n) => ({ cor: CORES_NC[n], rotulo: `${n} – ${ROTULOS_NOTA[n]}` })),
