@@ -7,9 +7,9 @@ import { territorioApi } from './territorioApi'
 /**
  * Ponto único de acesso aos dados do painel.
  * - Setores, serviços e simulações: base territorial no Azure (VITE_USE_MOCKS_TERRITORIO=true volta aos mocks, para uso offline).
- * - Lista do dia: API de cadastro (Java) com VITE_USE_MOCKS_LISTA=false; mock por padrão.
+ * - Lista do dia e cobertura: API de cadastro (Java) com VITE_USE_MOCKS_LISTA=false; mock por padrão.
  * - Login: API de cadastro (POST /auth/login), em auth/AuthContext.
- * - Nível de calor e estado: mocks enquanto VITE_USE_MOCKS=true (APIs ainda não publicadas).
+ * - Nível de calor: mock enquanto VITE_USE_MOCKS=true (APIs ainda não publicadas).
  */
 const territorio = config.usarMocksTerritorio
   ? {
@@ -22,18 +22,12 @@ const territorio = config.usarMocksTerritorio
     }
   : territorioApi
 
-const restante = config.usarMocks
-  ? {
-      estado: mockApi.estado,
-      situacaoAtual: mockApi.situacaoAtual,
-    }
-  : {
-      estado: javaApi.estado,
-      situacaoAtual: climaApi.situacaoAtual,
-    }
+const restante = { situacaoAtual: config.usarMocks ? mockApi.situacaoAtual : climaApi.situacaoAtual }
 
-/** Lista do dia: API de cadastro (GET /listas/hoje) assim que VITE_USE_MOCKS_LISTA=false. */
-const lista = { listaDoDia: config.usarMocksLista ? mockApi.listaDoDia : javaApi.listaDoDia }
+/** Lista do dia e cobertura: API de cadastro (GET /listas/hoje e /cobertura/hoje) com VITE_USE_MOCKS_LISTA=false. */
+const lista = config.usarMocksLista
+  ? { listaDoDia: mockApi.listaDoDia, cobertura: mockApi.cobertura }
+  : { listaDoDia: javaApi.listaDoDia, cobertura: javaApi.cobertura }
 
 export const api = { ...territorio, ...restante, ...lista }
 

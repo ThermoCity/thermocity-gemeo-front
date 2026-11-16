@@ -16,7 +16,7 @@ export const config = {
   apiJavaUrl: (env.VITE_API_JAVA_URL ?? 'https://thermocity-cadastro-api.azurewebsites.net').replace(/\/$/, ''),
   /** API de clima (.NET): nível de calor atual e previsto. */
   apiClimaUrl: (env.VITE_API_CLIMA_URL ?? 'http://localhost:5000').replace(/\/$/, ''),
-  /** true = usa os dados mockados para o que ainda não tem API: usuário, nível de calor, estado e lista do dia. */
+  /** true = nível de calor mockado (a API de clima ainda não está publicada). */
   usarMocks,
   /** true = lista do dia mockada. Padrão: segue VITE_USE_MOCKS (false liga a lista real da API de cadastro). */
   usarMocksLista,

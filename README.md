@@ -28,7 +28,8 @@ Abra o endereço que o Vite mostrar (normalmente http://localhost:5173).
 |---|---|---|
 | `VITE_API_TERRITORIO_URL` | `https://thermocity-base-territorial-api.azurewebsites.net` | base territorial (setores e serviços do mapa) |
 | `VITE_USE_MOCKS_TERRITORIO` | `false` | `true` usa os setores e serviços de `public/mocks` (offline) |
-| `VITE_USE_MOCKS` | `true` | `true` usa mocks para usuário, nível de calor, estado e lista do dia; `false` chama as APIs |
+| `VITE_USE_MOCKS` | `true` | `true` usa o nível de calor mockado; `false` chama a API de clima |
+| `VITE_USE_MOCKS_LISTA` | segue `VITE_USE_MOCKS` | `false` usa a lista do dia e a cobertura reais da API de cadastro |
 | `VITE_API_JAVA_URL` | `https://thermocity-cadastro-api.azurewebsites.net` | API Java do gêmeo (lista do dia, contatos, estado, simulações) |
 | `VITE_API_CLIMA_URL` | `http://localhost:5000` | API de clima .NET (nível de calor) |
 | `VITE_DEMO_EMAIL` / `VITE_DEMO_SENHA` | `admin@email.com` / `senha123` (arquivo `.env`) | usuário de teste (GESTOR) exibido na tela de login, para quem não tem conta |
@@ -92,7 +93,9 @@ Código gerado com apoio do Claude (Anthropic) e revisado pela equipe.
 |---|---|
 | Setores (polígonos, nota de calor, IPVS, população 60+ e 70+) | `GET /setores/geojson` da base territorial no Azure |
 | UBS e refúgios do mapa | `GET /servicos` da base territorial no Azure |
-| Usuário, nível de calor, estado do gêmeo e lista do dia | mocks (`VITE_USE_MOCKS=true`) até as APIs serem publicadas |
+| Login do gestor | `POST /auth/login` da API de cadastro (usuário de teste na tela de login) |
+| Lista do dia, indicadores do topo, cobertura por UBS e camada de cobertura do mapa | `GET /listas/hoje` e `GET /cobertura/hoje` da API de cadastro (`VITE_USE_MOCKS_LISTA=false`) |
+| Nível de calor de hoje e dos próximos dias | mock (`VITE_USE_MOCKS=true`) até a API de clima ser publicada; sem ela, o painel mostra o nível que gerou a lista do dia |
 
 A base territorial só aceita chamadas do navegador vindas das origens em `CORS_ORIGENS` (no App Service).
 O padrão libera `http://localhost:5173`; ao publicar o painel, inclua a URL dele nessa variável.

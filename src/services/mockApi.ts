@@ -1,7 +1,6 @@
 import type {
   CenarioSimulacao,
   DiaModelo,
-  EstadoGemeo,
   ModeloOndaCalor,
   ModelosOndaCalor,
   NivelCalor,
@@ -16,6 +15,7 @@ import type {
   SituacaoClima,
   StatusContato,
 } from '../types'
+import { coberturaDaLista } from './coberturaDemo'
 
 /**
  * Dados DEMONSTRATIVOS enquanto as APIs não estão prontas (arquivos em public/mocks).
@@ -207,15 +207,7 @@ export const mockApi = {
       atualizadoEm: agora(),
       desatualizado: false,
     }),
-  estado: () =>
-    dadosBase().then(({ setores, lista }) => espera<EstadoGemeo>({
-      pessoasNaLista: lista.length,
-      contatadas: lista.filter((p) => p.status === 'CONTATADO_BEM' || p.status === 'PRECISA_AJUDA').length,
-      precisaAjuda: lista.filter((p) => p.status === 'PRECISA_AJUDA').length,
-      semRefugioProximo: Math.round(lista.length / 3),
-      setoresNota5: setores.features.filter((f) => f.properties.classeCalor === 5).length,
-      atualizadoEm: agora(),
-    })),
+  cobertura: () => dadosBase().then(({ lista }) => espera(coberturaDaLista(lista, 3))),
   listaDoDia: () => dadosBase().then((d) => espera(d.lista)),
   modelosOndaCalor: () =>
     espera<ModelosOndaCalor>({

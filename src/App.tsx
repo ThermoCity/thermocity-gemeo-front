@@ -29,7 +29,7 @@ function Painel() {
   const setores = useDados(api.setoresGeoJson)
   const servicos = useDados(api.servicos)
   const clima = useDados(api.situacaoAtual)
-  const estado = useDados(api.estado)
+  const cobertura = useDados(api.cobertura)
   const lista = useDados(api.listaDoDia)
 
   useEffect(() => {
@@ -57,7 +57,7 @@ function Painel() {
       <Sidebar usuario={usuario?.nome ?? ''} onSair={sair} />
       <main className="conteudo">
         <FaixaContexto
-          atualizadoEm={estado.dados?.atualizadoEm ?? clima.dados?.atualizadoEm ?? null}
+          atualizadoEm={cobertura.dados?.atualizadoEm ?? clima.dados?.atualizadoEm ?? null}
           tema={tema}
           onTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
           usandoMocks={config.usarMocks}
@@ -68,7 +68,7 @@ function Painel() {
             setores={setores}
             servicos={servicos}
             clima={clima}
-            estado={estado}
+            cobertura={cobertura}
             lista={lista}
             seloMapa={config.usarMocksTerritorio ? 'Dados demonstrativos' : undefined}
           />

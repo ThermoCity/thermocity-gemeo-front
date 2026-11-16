@@ -92,13 +92,41 @@ export interface PessoaLista {
   refugioMetros?: number | null
 }
 
-/** Resumo do estado atual da cidade (GET /gemeo/estado). */
-export interface EstadoGemeo {
-  pessoasNaLista: number
-  contatadas: number
+/** Contagens da busca ativa (GET /cobertura/hoje da API de cadastro). */
+export interface ResumoCobertura {
+  total: number
+  /** CONTATADO_BEM + PRECISA_AJUDA */
+  contatados: number
+  /** ainda sem contato + NAO_ATENDEU */
+  pendentes: number
   precisaAjuda: number
-  semRefugioProximo: number
-  setoresNota5: number
+  naoAtendeu: number
+  dadosIncorretos: number
+  /** contatados / total, em % (uma casa decimal) */
+  coberturaPercentual: number
+}
+
+export interface CoberturaSetor {
+  setorCodigo: string
+  bairro: string | null
+  resumo: ResumoCobertura
+}
+
+export interface CoberturaUbs {
+  ubsId: string
+  ubsNome: string
+  resumo: ResumoCobertura
+  setores: CoberturaSetor[]
+}
+
+/** Cobertura do dia: total, por UBS (da menor para a maior cobertura) e por setor. */
+export interface Cobertura {
+  data: string
+  /** Maior nível de calor entre as listas do dia. */
+  nivelCalor: number
+  resumo: ResumoCobertura
+  ubs: CoberturaUbs[]
+  /** Hora em que o painel buscou os dados (preenchido pelo front). */
   atualizadoEm: string
 }
 

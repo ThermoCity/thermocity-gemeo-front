@@ -232,3 +232,11 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 .linha-tempo-sub { font-size: 11px; color: var(--texto-suave); white-space: nowrap; }
 .linha-tempo-rotulo { font-size: 12px; font-weight: 700; }
 .tabela-resultado tr.linha-ativa { background: var(--fundo); }
+
+/* Cobertura por UBS */
+.ubs-cobertura { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto; }
+.ubs-linha { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.ubs-nome { overflow-wrap: anywhere; }
+.barra-cobertura { height: 6px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 999px; overflow: hidden; margin: 4px 0; }
+.barra-cobertura span { display: block; height: 100%; background: var(--destaque); }
+.ubs-detalhe { font-size: 12px; color: var(--texto-suave); }
