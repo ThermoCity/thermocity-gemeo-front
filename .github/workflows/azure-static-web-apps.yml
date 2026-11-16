@@ -1,0 +1,50 @@
+# Build do front (Vite) e publicação no Azure Static Web Apps.
+# As variáveis VITE_* entram no JavaScript na hora do build: não coloque segredos aqui.
+
+name: Build and deploy front to Azure Static Web Apps - thermocity-gemeo-front
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:          # PR para a main: roda só o build (validação, sem deploy)
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_TERRITORIO_URL: 'https://thermocity-base-territorial-api.azurewebsites.net'
+          VITE_USE_MOCKS_TERRITORIO: 'false'
+          VITE_USE_MOCKS: 'true'       # false = usa as APIs reais de cadastro e clima
+          VITE_API_JAVA_URL: 'https://thermocity-cadastro-api.azurewebsites.net'
+          VITE_API_CLIMA_URL: 'https://thermocity-weather-api.azurewebsites.net'
+          VITE_API_TIMEOUT_MS: '90000'
+
+      - name: Deploy to Azure Static Web Apps
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'upload'
+          app_location: 'dist'
+          skip_app_build: true
