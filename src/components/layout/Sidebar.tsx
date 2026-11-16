@@ -1,7 +1,7 @@
 import icone from '../../assets/thermocity-icone.png'
 
 /** Barra lateral azul: marca, seção atual e usuário. */
-export function Sidebar({ usuario }: { usuario: string }) {
+export function Sidebar({ usuario, onSair }: { usuario: string; onSair: () => void }) {
   return (
     <aside className="sidebar">
       <div className="marca">
@@ -22,6 +22,9 @@ export function Sidebar({ usuario }: { usuario: string }) {
       <div className="sidebar-rodape">
         <span className="sidebar-usuario">{usuario}</span>
         <span className="sidebar-papel">Gestor de saúde</span>
+        <button type="button" className="sidebar-sair" onClick={onSair}>
+          Sair
+        </button>
       </div>
     </aside>
   )

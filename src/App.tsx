@@ -22,7 +22,7 @@ function temaInicial(): Tema {
 }
 
 function Painel() {
-  const { usuario } = useSessao()
+  const { usuario, sair } = useSessao()
   const [aba, setAba] = useState<Aba>(abaDoEndereco)
   const [tema, setTema] = useState<Tema>(temaInicial)
 
@@ -54,7 +54,7 @@ function Painel() {
 
   return (
     <div className="app">
-      <Sidebar usuario={usuario?.nome ?? ''} />
+      <Sidebar usuario={usuario?.nome ?? ''} onSair={sair} />
       <main className="conteudo">
         <FaixaContexto
           atualizadoEm={estado.dados?.atualizadoEm ?? clima.dados?.atualizadoEm ?? null}

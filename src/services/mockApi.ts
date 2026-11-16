@@ -15,7 +15,6 @@ import type {
   SimulacaoResumo,
   SituacaoClima,
   StatusContato,
-  Usuario,
 } from '../types'
 
 /**
@@ -193,7 +192,6 @@ function distribuirPorSetor(
 }
 
 export const mockApi = {
-  usuarioAtual: () => espera<Usuario>({ nome: 'Gestor demonstração', email: 'gestor@thermocity.demo', papel: 'GESTOR' }, 50),
   setoresGeoJson: () => dadosBase().then((d) => espera(d.setores)),
   servicos: () => dadosBase().then((d) => espera(d.servicos)),
   situacaoAtual: () =>

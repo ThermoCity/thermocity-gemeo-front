@@ -13,11 +13,20 @@ export class ApiError extends Error {
   }
 }
 
-let tokenAtual: string = config.tokenDev
+let tokenAtual = ''
+let aoNaoAutorizado: (() => void) | null = null
 
-/** Define o token JWT usado nas próximas requisições (virá do login quando ele existir). */
+/** Define o token JWT (vindo do login) usado nas próximas requisições. */
 export function definirToken(token: string) {
   tokenAtual = token
+}
+
+/** Avisa quando uma chamada com token volta 401 (token vencido): a sessão é encerrada. Devolve o cancelamento. */
+export function aoPerderAcesso(callback: () => void) {
+  aoNaoAutorizado = callback
+  return () => {
+    if (aoNaoAutorizado === callback) aoNaoAutorizado = null
+  }
 }
 
 /** GET/POST com JWT, tempo limite e tradução dos erros para ApiError. */
@@ -34,6 +43,7 @@ export async function requisitar<T>(baseUrl: string, caminho: string, init: Requ
     if (resposta.status === 204) return undefined as T
     const corpo = await resposta.json().catch(() => null)
     if (!resposta.ok) {
+      if (resposta.status === 401 && tokenAtual) aoNaoAutorizado?.()
       throw new ApiError(resposta.status, corpo?.mensagem ?? `Erro ${resposta.status} ao acessar ${caminho}`, corpo?.detalhes ?? [])
     }
     return corpo as T

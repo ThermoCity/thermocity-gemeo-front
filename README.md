@@ -29,9 +29,10 @@ Abra o endereço que o Vite mostrar (normalmente http://localhost:5173).
 | `VITE_API_TERRITORIO_URL` | `https://thermocity-base-territorial-api.azurewebsites.net` | base territorial (setores e serviços do mapa) |
 | `VITE_USE_MOCKS_TERRITORIO` | `false` | `true` usa os setores e serviços de `public/mocks` (offline) |
 | `VITE_USE_MOCKS` | `true` | `true` usa mocks para usuário, nível de calor, estado e lista do dia; `false` chama as APIs |
-| `VITE_API_JAVA_URL` | `http://localhost:8080` | API Java do gêmeo (lista do dia, contatos, estado, simulações) |
+| `VITE_API_JAVA_URL` | `https://thermocity-cadastro-api.azurewebsites.net` | API Java do gêmeo (lista do dia, contatos, estado, simulações) |
 | `VITE_API_CLIMA_URL` | `http://localhost:5000` | API de clima .NET (nível de calor) |
-| `VITE_DEV_TOKEN` | vazio | JWT de um GESTOR enquanto não há tela de login |
+| `VITE_DEMO_EMAIL` / `VITE_DEMO_SENHA` | `admin@email.com` / `senha123` (arquivo `.env`) | usuário de teste (GESTOR) exibido na tela de login, para quem não tem conta |
+| `VITE_SEM_LOGIN` | `false` | `true` pula o login (uso offline, com mocks) |
 | `VITE_API_TIMEOUT_MS` | `90000` | tempo máximo de cada requisição (a API no Azure demora mais na primeira chamada) |
 
 Nenhum segredo fica no código. O `.env.local` está no `.gitignore` do Vite.

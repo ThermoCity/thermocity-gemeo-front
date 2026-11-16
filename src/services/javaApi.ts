@@ -1,5 +1,5 @@
 import { config } from '../config/env'
-import type { EstadoGemeo, PessoaLista, StatusContato, Usuario } from '../types'
+import type { EstadoGemeo, PessoaLista, StatusContato } from '../types'
 import { requisitar } from './http'
 
 /** Item de GET /listas/hoje da API de cadastro (só os campos que o painel usa). */
@@ -50,7 +50,6 @@ export function paraPessoaLista(item: ItemListaApi): PessoaLista {
 
 /** Chamadas à API Java de cadastro. Setores, serviços e simulações vêm de territorioApi. */
 export const javaApi = {
-  usuarioAtual: () => requisitar<Usuario>(config.apiJavaUrl, '/auth/eu'),
   estado: () => requisitar<EstadoGemeo>(config.apiJavaUrl, '/gemeo/estado'),
   /** Primeiros 20 da lista do dia de todas as UBS (gestor). Sem lista no dia a API responde 204: lista vazia. */
   listaDoDia: () =>
