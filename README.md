@@ -34,6 +34,7 @@ Abra o endereço que o Vite mostrar (normalmente http://localhost:5173).
 | `VITE_API_CLIMA_URL` | `http://localhost:5000` | API de clima .NET (nível de calor) |
 | `VITE_DEMO_EMAIL` / `VITE_DEMO_SENHA` | `admin@email.com` / `senha123` (arquivo `.env`) | usuário de teste (GESTOR) exibido na tela de login, para quem não tem conta |
 | `VITE_SEM_LOGIN` | `false` | `true` pula o login (uso offline, com mocks) |
+| `VITE_ATUALIZACAO_MS` | `60000` | intervalo da atualização automática de nível, lista e cobertura |
 | `VITE_API_TIMEOUT_MS` | `90000` | tempo máximo de cada requisição (a API no Azure demora mais na primeira chamada) |
 
 Nenhum segredo fica no código. O `.env.local` está no `.gitignore` do Vite.

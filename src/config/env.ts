@@ -29,4 +29,6 @@ export const config = {
   // 90 s por padrão: no Azure, a primeira chamada depois de um tempo parada (ou logo após um deploy)
   // acorda a API, que ainda monta o GeoJSON dos setores; isso pode passar de 30 s.
   timeoutMs: Number(env.VITE_API_TIMEOUT_MS ?? 90000),
+  /** De quanto em quanto tempo o painel atualiza sozinho nível, lista e cobertura (PBI 111). Padrão: 1 minuto. */
+  atualizacaoMs: Number(env.VITE_ATUALIZACAO_MS ?? 60000),
 } as const

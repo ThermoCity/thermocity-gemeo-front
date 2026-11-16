@@ -4,6 +4,7 @@ import { Abas, abaDoEndereco, type Aba } from './components/layout/Abas'
 import { FaixaContexto } from './components/layout/FaixaContexto'
 import { Sidebar } from './components/layout/Sidebar'
 import { config } from './config/env'
+import { useAvisoNivel } from './hooks/useAvisoNivel'
 import { useDados } from './hooks/useDados'
 import { AgoraPage } from './pages/AgoraPage'
 import { SimulacaoPage } from './pages/SimulacaoPage'
@@ -28,9 +29,20 @@ function Painel() {
 
   const setores = useDados(api.setoresGeoJson)
   const servicos = useDados(api.servicos)
-  const clima = useDados(api.situacaoAtual)
-  const cobertura = useDados(api.cobertura)
-  const lista = useDados(api.listaDoDia)
+  // Nível, lista e cobertura se atualizam sozinhos (PBI 111); setores e serviços mudam pouco e carregam uma vez
+  const atualizacao = { intervaloMs: config.atualizacaoMs }
+  const clima = useDados(api.situacaoAtual, atualizacao)
+  const cobertura = useDados(api.cobertura, atualizacao)
+  const lista = useDados(api.listaDoDia, atualizacao)
+
+  // Aviso visível quando o nível de calor muda ou a lista do dia começa/termina entre duas atualizações
+  const { aviso, fecharAviso } = useAvisoNivel(
+    clima.dados?.hoje.nivel,
+    cobertura.atualizadoEm ? (cobertura.dados?.nivelCalor ?? null) : undefined,
+  )
+  const desatualizado = clima.desatualizado || cobertura.desatualizado || lista.desatualizado
+  const ultimas = [clima.atualizadoEm, cobertura.atualizadoEm, lista.atualizadoEm].filter((d): d is Date => d != null)
+  const atualizadoEm = ultimas.length ? new Date(Math.min(...ultimas.map((d) => d.getTime()))).toISOString() : null
 
   useEffect(() => {
     document.documentElement.dataset.tema = tema
@@ -57,11 +69,22 @@ function Painel() {
       <Sidebar usuario={usuario?.nome ?? ''} onSair={sair} />
       <main className="conteudo">
         <FaixaContexto
-          atualizadoEm={cobertura.dados?.atualizadoEm ?? clima.dados?.atualizadoEm ?? null}
+          atualizadoEm={atualizadoEm}
+          desatualizado={desatualizado}
           tema={tema}
           onTema={() => setTema((t) => (t === 'claro' ? 'escuro' : 'claro'))}
           usandoMocks={config.usarMocks}
         />
+        {aviso && (
+          <div className="aviso-mudanca" role="alert">
+            <span>
+              <strong>{aviso.em.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</strong> · {aviso.texto}
+            </span>
+            <button type="button" className="botao-icone" onClick={fecharAviso} aria-label="Fechar aviso">
+              ×
+            </button>
+          </div>
+        )}
         <Abas aba={aba} onAba={trocarAba} />
         {aba === 'agora' ? (
           <AgoraPage
