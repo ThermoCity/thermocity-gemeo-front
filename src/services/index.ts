@@ -7,7 +7,8 @@ import { territorioApi } from './territorioApi'
 /**
  * Ponto único de acesso aos dados do painel.
  * - Setores, serviços e simulações: base territorial no Azure (VITE_USE_MOCKS_TERRITORIO=true volta aos mocks, para uso offline).
- * - Usuário, nível de calor, estado e lista do dia: mocks enquanto VITE_USE_MOCKS=true (APIs ainda não publicadas).
+ * - Lista do dia: API de cadastro (Java) com VITE_USE_MOCKS_LISTA=false; mock por padrão.
+ * - Usuário, nível de calor e estado: mocks enquanto VITE_USE_MOCKS=true (APIs ainda não publicadas).
  */
 const territorio = config.usarMocksTerritorio
   ? {
@@ -24,16 +25,17 @@ const restante = config.usarMocks
   ? {
       usuarioAtual: mockApi.usuarioAtual,
       estado: mockApi.estado,
-      listaDoDia: mockApi.listaDoDia,
       situacaoAtual: mockApi.situacaoAtual,
     }
   : {
       usuarioAtual: javaApi.usuarioAtual,
       estado: javaApi.estado,
-      listaDoDia: javaApi.listaDoDia,
       situacaoAtual: climaApi.situacaoAtual,
     }
 
-export const api = { ...territorio, ...restante }
+/** Lista do dia: API de cadastro (GET /listas/hoje) assim que VITE_USE_MOCKS_LISTA=false. */
+const lista = { listaDoDia: config.usarMocksLista ? mockApi.listaDoDia : javaApi.listaDoDia }
+
+export const api = { ...territorio, ...restante, ...lista }
 
 export { ApiError, definirToken } from './http'

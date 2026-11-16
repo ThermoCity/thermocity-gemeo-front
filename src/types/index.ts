@@ -76,7 +76,8 @@ export interface ServicosDoSetor {
   refugioMaisProximo: ServicoProximo | null
 }
 
-export type StatusContato = 'PENDENTE' | 'CONTATADO' | 'PRECISA_AJUDA' | 'NAO_ATENDEU'
+/** Situação do contato na lista do dia (enum StatusContato da API de cadastro). */
+export type StatusContato = 'PENDENTE' | 'CONTATADO_BEM' | 'PRECISA_AJUDA' | 'NAO_ATENDEU' | 'DADOS_INCORRETOS'
 
 export interface PessoaLista {
   posicao: number
@@ -87,6 +88,8 @@ export interface PessoaLista {
   pontuacao: number
   motivos: string[]
   status: StatusContato
+  /** Distância até o refúgio mais próximo, em metros (nula se não houver). */
+  refugioMetros?: number | null
 }
 
 /** Resumo do estado atual da cidade (GET /gemeo/estado). */

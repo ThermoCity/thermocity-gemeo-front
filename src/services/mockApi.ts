@@ -71,7 +71,7 @@ function montarLista(setores: SetoresGeoJson, servicos: Servico[]): PessoaLista[
     .map((f) => ({ ...f.properties, ubs: ubsMaisProxima(f) }))
     .filter((p) => p.classeCalor === 5 && (p.ipvsGrupo ?? 0) >= 3 && (p.pop70mais ?? 0) > 0)
     .slice(0, 12)
-  const status: StatusContato[] = ['PENDENTE', 'PENDENTE', 'CONTATADO', 'PRECISA_AJUDA', 'PENDENTE', 'NAO_ATENDEU']
+  const status: StatusContato[] = ['PENDENTE', 'PENDENTE', 'CONTATADO_BEM', 'PRECISA_AJUDA', 'PENDENTE', 'NAO_ATENDEU']
   return candidatos
     .map((p, i) => {
       const motivos = ['70+ anos', `setor nota de calor ${p.classeCalor}`]
@@ -212,7 +212,7 @@ export const mockApi = {
   estado: () =>
     dadosBase().then(({ setores, lista }) => espera<EstadoGemeo>({
       pessoasNaLista: lista.length,
-      contatadas: lista.filter((p) => p.status === 'CONTATADO' || p.status === 'PRECISA_AJUDA').length,
+      contatadas: lista.filter((p) => p.status === 'CONTATADO_BEM' || p.status === 'PRECISA_AJUDA').length,
       precisaAjuda: lista.filter((p) => p.status === 'PRECISA_AJUDA').length,
       semRefugioProximo: Math.round(lista.length / 3),
       setoresNota5: setores.features.filter((f) => f.properties.classeCalor === 5).length,

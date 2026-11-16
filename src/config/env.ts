@@ -9,12 +9,14 @@ export const config = {
   apiTerritorioUrl: (env.VITE_API_TERRITORIO_URL ?? 'https://thermocity-base-territorial-api.azurewebsites.net').replace(/\/$/, ''),
   /** true = usa os setores e serviços mockados de public/mocks em vez da base territorial (uso offline). */
   usarMocksTerritorio: (env.VITE_USE_MOCKS_TERRITORIO ?? 'false') === 'true',
-  /** API Java do gêmeo (ainda não publicada): lista do dia, contatos, estado, simulações. */
+  /** API Java de cadastro (Arthur): lista do dia (GET /listas/hoje), contatos e cobertura. Exige o JWT de um gestor. */
   apiJavaUrl: (env.VITE_API_JAVA_URL ?? 'http://localhost:8080').replace(/\/$/, ''),
   /** API de clima (.NET): nível de calor atual e previsto. */
   apiClimaUrl: (env.VITE_API_CLIMA_URL ?? 'http://localhost:5000').replace(/\/$/, ''),
   /** true = usa os dados mockados para o que ainda não tem API: usuário, nível de calor, estado e lista do dia. */
   usarMocks: (env.VITE_USE_MOCKS ?? 'true') !== 'false',
+  /** true = lista do dia mockada. Padrão: segue VITE_USE_MOCKS (false liga a lista real da API de cadastro). */
+  usarMocksLista: (env.VITE_USE_MOCKS_LISTA ?? env.VITE_USE_MOCKS ?? 'true') !== 'false',
   /** Token JWT de desenvolvimento, usado enquanto não há tela de login. */
   tokenDev: env.VITE_DEV_TOKEN ?? '',
   /** Tempo máximo de cada requisição, em milissegundos. */

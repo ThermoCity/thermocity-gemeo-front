@@ -2,9 +2,10 @@ import type { PessoaLista, StatusContato } from '../../types'
 
 const STATUS: Record<StatusContato, string> = {
   PENDENTE: 'Pendente',
-  CONTATADO: 'Contatado',
+  CONTATADO_BEM: 'Contatado',
   PRECISA_AJUDA: 'Precisa de ajuda',
   NAO_ATENDEU: 'Não atendeu',
+  DADOS_INCORRETOS: 'Dados incorretos',
 }
 
 interface Props {
