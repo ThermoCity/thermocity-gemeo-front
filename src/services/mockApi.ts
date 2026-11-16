@@ -1,4 +1,21 @@
-import type { EstadoGemeo, PessoaLista, Servico, ServicoProximo, ServicosDoSetor, SetoresGeoJson, SituacaoClima, StatusContato, Usuario } from '../types'
+import type {
+  CenarioSimulacao,
+  DiaModelo,
+  EstadoGemeo,
+  ModeloOndaCalor,
+  ModelosOndaCalor,
+  NivelCalor,
+  PessoaLista,
+  Servico,
+  ServicoProximo,
+  ServicosDoSetor,
+  SetoresGeoJson,
+  SimulacaoDetalhe,
+  SimulacaoResumo,
+  SituacaoClima,
+  StatusContato,
+  Usuario,
+} from '../types'
 
 /**
  * Dados DEMONSTRATIVOS enquanto as APIs não estão prontas (arquivos em public/mocks).
@@ -91,6 +108,60 @@ function maisProximo(candidatos: Servico[], lat: number, lon: number): ServicoPr
   return melhor
 }
 
+/* ---------------------------------------------------------------- simulação (só para uso offline) */
+
+const NOMES_NC: Record<NivelCalor, string> = { 1: 'Normal', 2: 'Atenção', 3: 'Alerta', 4: 'Alto risco', 5: 'Emergência' }
+/** Limiares A707 (1 dia / 3 dias seguidos), iguais aos da API. */
+const REGRAS: { nivel: NivelCalor; ic: number; dias: number }[] = [
+  { nivel: 5, ic: 38.5, dias: 1 },
+  { nivel: 5, ic: 37.0, dias: 3 },
+  { nivel: 4, ic: 37.0, dias: 1 },
+  { nivel: 4, ic: 36.0, dias: 3 },
+  { nivel: 3, ic: 36.0, dias: 1 },
+  { nivel: 3, ic: 35.0, dias: 3 },
+  { nivel: 2, ic: 35.0, dias: 1 },
+]
+const MAX_HISTORICO_DEMO = 40.93
+
+function niveis(ic: number[]): NivelCalor[] {
+  return ic.map((_, i) => {
+    const regra = REGRAS.find((r) => i - r.dias + 1 >= 0 && ic.slice(i - r.dias + 1, i + 1).every((v) => v >= r.ic))
+    return regra?.nivel ?? 1
+  })
+}
+
+/** Onda de calor DEMONSTRATIVA (valores inventados, só para usar o painel sem a API). */
+const ONDA_DEMO = [34.8, 35.6, 36.9, 37.8, 38.9, 37.2, 35.1]
+
+function modeloDemo(acrescimo: number): ModeloOndaCalor {
+  const ic = ONDA_DEMO.map((v) => Math.round((v + acrescimo) * 100) / 100)
+  const nc = niveis(ic)
+  const dias: DiaModelo[] = ic.map((v, i) => ({
+    dia: i + 1,
+    data: `2024-03-${String(11 + i).padStart(2, '0')}`,
+    icMaxC: v,
+    nivel: nc[i],
+    nome: NOMES_NC[nc[i]],
+    parteDoEpisodio: i >= 2 && i <= 5,
+    extrapolacao: v > MAX_HISTORICO_DEMO,
+  }))
+  return {
+    id: `DEMO-2024-03-13${acrescimo ? `+${acrescimo}` : ''}`,
+    nome: `Onda de calor demonstrativa${acrescimo ? ` + ${acrescimo} °C` : ''}`,
+    tipo: acrescimo ? 'VARIACAO' : 'REAL',
+    acrescimoC: acrescimo,
+    inicioEpisodio: '2024-03-13',
+    fimEpisodio: '2024-03-16',
+    diasEpisodio: 4,
+    nivelMaximo: Math.max(...nc) as NivelCalor,
+    icMaxC: Math.max(...ic),
+    diasExtrapolados: dias.filter((d) => d.extrapolacao).length,
+    dias,
+  }
+}
+
+const simulacoesDemo = new Map<number, SimulacaoDetalhe>()
+
 export const mockApi = {
   usuarioAtual: () => espera<Usuario>({ nome: 'Gestor demonstração', email: 'gestor@thermocity.demo', papel: 'GESTOR' }, 50),
   setoresGeoJson: () => dadosBase().then((d) => espera(d.setores)),
@@ -118,6 +189,47 @@ export const mockApi = {
       atualizadoEm: agora(),
     })),
   listaDoDia: () => dadosBase().then((d) => espera(d.lista)),
+  modelosOndaCalor: () =>
+    espera<ModelosOndaCalor>({
+      fonte: 'Dados demonstrativos',
+      versaoLimiar: 'A707-2003-2026-v1',
+      maxHistoricoC: MAX_HISTORICO_DEMO,
+      modelos: [0, 1, 3].map(modeloDemo),
+    }),
+  criarSimulacao: (c: CenarioSimulacao) => {
+    const id = simulacoesDemo.size + 1
+    const nc = niveis(c.icMaxPorDia)
+    const capacidade = c.agentesPorUbs * c.contatosPorAgenteDia * 36
+    let pendentes = 0
+    const dias = c.icMaxPorDia.map((ic, i) => {
+      // números fictícios: só para ver a tela funcionando sem a API
+      // os pendentes de ontem já fazem parte da lista de hoje (ninguém aparece duas vezes)
+      const lista = Math.max(nc[i] >= 3 ? [0, 0, 0, 180, 900, 2600][nc[i]] : 0, pendentes)
+      const contatadas = Math.min(lista, capacidade)
+      pendentes = lista - contatadas
+      const semRefugio = c.refugios === 'NENHUM' ? lista : Math.round(lista * 0.4)
+      return {
+        dia: i + 1, data: null, icMaxC: ic, nivel: nc[i], nome: NOMES_NC[nc[i]], regra: '—',
+        extrapolacao: ic > MAX_HISTORICO_DEMO, pessoasNaLista: lista, contatadas, pendentes, semRefugio800m: semRefugio,
+      }
+    })
+    const detalhe: SimulacaoDetalhe = {
+      id, nome: c.nome ?? `Simulação de ${dias.length} dias`, status: 'CONCLUIDA', criadoEm: agora(),
+      cenario: {
+        modeloId: c.modeloId ?? null, dataInicio: c.dataInicio ?? null, qtdDias: dias.length, refugios: c.refugios,
+        agentesPorUbs: c.agentesPorUbs, contatosPorAgenteDia: c.contatosPorAgenteDia, fatorK: c.fatorK, distrito: c.distrito ?? null,
+      },
+      versaoLimiar: 'A707-2003-2026-v1', maxHistoricoIcC: MAX_HISTORICO_DEMO,
+      nivelMaximo: Math.max(...nc) as NivelCalor, diasExtrapolados: dias.filter((d) => d.extrapolacao).length,
+      dias, setores: [],
+    }
+    simulacoesDemo.set(id, detalhe)
+    return espera<SimulacaoResumo>({ id, nome: detalhe.nome, status: 'CONCLUIDA', qtdDias: dias.length, nivelMaximo: detalhe.nivelMaximo, diasExtrapolados: detalhe.diasExtrapolados }, 600)
+  },
+  simulacao: (id: number, _dia?: number) => {
+    const s = simulacoesDemo.get(id)
+    return s ? espera(s) : Promise.reject(new Error('Simulação não encontrada'))
+  },
   servicosDoSetor: (codigo: string) =>
     dadosBase().then(({ setores, servicos }) => {
       const setor = setores.features.find((f) => f.id === codigo)

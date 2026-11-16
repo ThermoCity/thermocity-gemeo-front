@@ -1,5 +1,15 @@
 import { config } from '../config/env'
-import type { Servico, ServicoProximo, ServicosDoSetor, SetorFeature, SetoresGeoJson } from '../types'
+import type {
+  CenarioSimulacao,
+  ModelosOndaCalor,
+  Servico,
+  ServicoProximo,
+  ServicosDoSetor,
+  SetorFeature,
+  SetoresGeoJson,
+  SimulacaoDetalhe,
+  SimulacaoResumo,
+} from '../types'
 import { requisitar } from './http'
 
 /** Formato devolvido pela base territorial em GET /setores/geojson. */
@@ -86,6 +96,17 @@ export const territorioApi = {
     const dados = await requisitar<ServicoApi[]>(config.apiTerritorioUrl, '/servicos')
     return dados.map(({ id, nome, tipo, revisao, lat, lon, setorCodigo }) => ({ id, nome, tipo, revisao, lat, lon, setorCodigo }))
   }),
+
+  /** Ondas de calor reais da A707 e as variações +1 °C e +3 °C (a série histórica muda pouco: um pedido por sessão). */
+  modelosOndaCalor: umaVez(() => requisitar<ModelosOndaCalor>(config.apiTerritorioUrl, '/simulacoes/modelos')),
+
+  /** Cria e roda a simulação; o resultado fica em simulacao(id). */
+  criarSimulacao: (cenario: CenarioSimulacao) =>
+    requisitar<SimulacaoResumo>(config.apiTerritorioUrl, '/simulacoes', { method: 'POST', body: JSON.stringify(cenario) }),
+
+  /** Resultado da simulação; com `dia`, os setores vêm só daquele dia (resposta bem menor). */
+  simulacao: (id: number, dia?: number) =>
+    requisitar<SimulacaoDetalhe>(config.apiTerritorioUrl, `/simulacoes/${id}${dia ? `?dia=${dia}` : ''}`),
 
   servicosDoSetor: (codigo: string): Promise<ServicosDoSetor> => {
     let pedido = servicosPorSetor.get(codigo)

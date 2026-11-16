@@ -132,7 +132,7 @@ button:focus-visible, select:focus-visible, input:focus-visible, .setor:focus-vi
 
 /* Simulação */
 .faixa-simulacao { margin: 0; padding: 8px 12px; background: var(--azul); color: var(--off-white); border-radius: 8px; font-weight: 700; }
-.grade-simulacao { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; flex: 1; min-height: 480px; }
+.grade-simulacao { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 12px; flex: 1; min-height: 480px; }
 .cenario-campos { border: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .cenario-campos label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--texto-suave); }
 .botao-primario { background: var(--azul); color: #ffffff; border: none; border-radius: 8px; padding: 10px 14px; font-weight: 700; cursor: pointer; }
@@ -159,3 +159,31 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 .botao-link:focus-visible { outline: none; box-shadow: var(--sombra-foco); border-radius: 4px; }
 .texto-suave { color: var(--texto-suave); }
 .etiqueta-alerta { color: var(--destaque); font-weight: 700; }
+
+/* PBI 113: formulário do cenário e resultado da simulação */
+.painel-cenario { overflow-y: auto; }
+.cenario-campos input, .cenario-campos select { width: 100%; color: var(--texto); font: inherit; font-size: 14px; }
+.cenario-dias { border: 1px solid var(--borda); border-radius: 8px; padding: 8px 10px 10px; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.cenario-dias legend { font-size: 12px; color: var(--texto-suave); padding: 0 4px; }
+.grade-dias { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 8px; }
+.campo-dia { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--texto-suave); }
+.campo-dia-linha { display: flex; gap: 2px; }
+.campo-dia-linha input { min-width: 0; padding: 6px 4px; }
+.botao-remover { width: 22px; height: auto; flex: none; font-size: 14px; line-height: 1; }
+.botao-remover:disabled { opacity: 0.35; cursor: not-allowed; }
+.campo-extrapolado input { border-color: var(--destaque); border-style: dashed; }
+.campo-invalido, .cenario-campos .campo-invalido { border: 2px solid #c0392b !important; background: var(--alerta-fundo) !important; }
+.erro-campo { color: #c0392b; font-size: 12px; font-weight: 700; }
+:root[data-tema='escuro'] .erro-campo { color: #ff8a7a; }
+.nota-campo { font-size: 12px; color: var(--texto-suave); }
+.cenario-par { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.aviso-extrapolacao { margin: 0; font-size: 12px; color: var(--texto); background: var(--alerta-fundo); border: 1px solid var(--destaque); border-radius: 8px; padding: 8px 10px; }
+.cenario-campos button[type='submit']:disabled { opacity: 0.6; cursor: progress; }
+.resultado-simulacao:focus { outline: none; }
+.tabela-rolagem { overflow-x: auto; }
+.tabela-resultado { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.tabela-resultado th, .tabela-resultado td { padding: 6px 10px; border-bottom: 1px solid var(--borda); text-align: right; white-space: nowrap; }
+.tabela-resultado th:first-child, .tabela-resultado td:nth-child(3) { text-align: left; }
+.tabela-resultado thead th { color: var(--texto-suave); font-weight: 700; font-size: 12px; }
+.tabela-resultado tbody th small { color: var(--texto-suave); font-weight: 400; }
+.tabela-resultado .selo-nc { font-size: 13px; }

@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { AvisoServicos } from '../components/mapa/AvisoServicos'
 import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
-import type { EstadoDados } from '../hooks/useDados'
-import type { Servico, SetoresGeoJson } from '../types'
+import { errosDaApi, type ErrosCenario } from '../components/simulacao/cenario'
+import { FormularioCenario } from '../components/simulacao/FormularioCenario'
+import { ResultadoSimulacao } from '../components/simulacao/ResultadoSimulacao'
+import { useDados, type EstadoDados } from '../hooks/useDados'
+import { ApiError, api } from '../services'
+import type { CenarioSimulacao, Servico, SetoresGeoJson, SimulacaoDetalhe } from '../types'
 
 interface Props {
   setores: EstadoDados<SetoresGeoJson>
@@ -11,12 +15,43 @@ interface Props {
 }
 
 /**
- * Aba “Simulação”: estrutura da tela. Os controles e o resultado chegam nos PBIs
- * “Montar o cenário de simulação no painel”, “Exibir o resultado da simulação”
- * e “Comparar dois cenários lado a lado (A × B)”.
+ * Aba “Simulação”: o gestor monta um cenário (onda de calor, refúgios, agentes), roda no motor da
+ * base territorial e vê o resultado dia a dia. Nada disso altera os dados reais.
  */
 export function SimulacaoPage({ setores, servicos }: Props) {
   const [selecionado, setSelecionado] = useState<string | null>(null)
+  const modelos = useDados(api.modelosOndaCalor)
+  const [enviando, setEnviando] = useState(false)
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null)
+  const [errosApi, setErrosApi] = useState<ErrosCenario>({})
+  const [resultado, setResultado] = useState<SimulacaoDetalhe | null>(null)
+  const resultadoRef = useRef<HTMLDivElement>(null)
+
+  const distritos = useMemo(
+    () => [...new Set(setores.dados?.features.map((f) => f.properties.distrito).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [setores.dados],
+  )
+
+  const simular = async (cenario: CenarioSimulacao) => {
+    setEnviando(true)
+    setErroEnvio(null)
+    setErrosApi({})
+    try {
+      const criada = await api.criarSimulacao(cenario)
+      // o resultado traz os setores só do dia 1 (o mapa por dia busca os outros)
+      setResultado(await api.simulacao(criada.id, 1))
+      requestAnimationFrame(() => {
+        resultadoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        resultadoRef.current?.querySelector<HTMLElement>('.resultado-simulacao')?.focus({ preventScroll: true })
+      })
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 400) setErrosApi(errosDaApi(e.detalhes))
+      setErroEnvio(e instanceof Error ? e.message : 'Não foi possível rodar a simulação')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
   return (
     <div className="pagina-simulacao">
       <p className="faixa-simulacao" role="note">
@@ -26,36 +61,13 @@ export function SimulacaoPage({ setores, servicos }: Props) {
         <section className="cartao painel-cenario" aria-labelledby="titulo-cenario">
           <header className="cartao-cabecalho">
             <h2 id="titulo-cenario">Cenário</h2>
-            <span className="etiqueta-breve">Em construção</span>
           </header>
-          <fieldset disabled className="cenario-campos">
-            <label>
-              Onda de calor
-              <select defaultValue="2023">
-                <option value="2023">Episódio real de 2023</option>
-                <option value="2023+3">2023 + 3 °C</option>
-                <option value="personalizado">Personalizado</option>
-              </select>
-            </label>
-            <label>
-              Refúgios considerados
-              <select defaultValue="todos">
-                <option value="todos">Todos</option>
-                <option value="publicos">Só os públicos</option>
-                <option value="nenhum">Nenhum</option>
-              </select>
-            </label>
-            <label>
-              Agentes por UBS
-              <input type="number" defaultValue={2} min={1} />
-            </label>
-            <label>
-              Contatos por agente por dia
-              <input type="number" defaultValue={15} min={1} />
-            </label>
-            <button type="button" className="botao-primario">Simular</button>
-          </fieldset>
-          <p className="nota">Os controles serão ligados ao motor de simulação da API Java (POST /simulacoes).</p>
+          <FormularioCenario modelos={modelos} distritos={distritos} enviando={enviando} errosApi={errosApi} onSimular={simular} />
+          {erroEnvio && (
+            <p className="nota estado-erro" role="alert">
+              A simulação não foi enviada: {erroEnvio}
+            </p>
+          )}
         </section>
         <div className="cartao cartao-mapa">
           <EstadoMapa carregando={setores.carregando} erro={setores.erro} onTentarDeNovo={setores.recarregar} />
@@ -73,6 +85,7 @@ export function SimulacaoPage({ setores, servicos }: Props) {
           )}
         </div>
       </div>
+      <div ref={resultadoRef}>{resultado && <ResultadoSimulacao simulacao={resultado} />}</div>
     </div>
   )
 }

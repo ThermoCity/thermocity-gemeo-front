@@ -98,3 +98,115 @@ export interface EstadoGemeo {
   setoresNota5: number
   atualizadoEm: string
 }
+
+/* ---------------------------------------------------------------- Simulação (base territorial) */
+
+/** Um dia de um modelo pronto de onda de calor (GET /simulacoes/modelos). */
+export interface DiaModelo {
+  dia: number
+  data: string
+  icMaxC: number
+  nivel: NivelCalor
+  nome: string
+  /** false nos dias de entrada e saída que acompanham o episódio. */
+  parteDoEpisodio: boolean
+  /** IC acima do maior valor já registrado na estação A707. */
+  extrapolacao: boolean
+}
+
+export interface ModeloOndaCalor {
+  id: string
+  nome: string
+  tipo: 'REAL' | 'VARIACAO'
+  acrescimoC: number
+  inicioEpisodio: string
+  fimEpisodio: string
+  diasEpisodio: number
+  nivelMaximo: NivelCalor
+  icMaxC: number
+  diasExtrapolados: number
+  dias: DiaModelo[]
+}
+
+export interface ModelosOndaCalor {
+  fonte: string
+  versaoLimiar: string
+  /** Maior IC máximo diário da A707; acima dele o dia é extrapolação. */
+  maxHistoricoC: number | null
+  modelos: ModeloOndaCalor[]
+}
+
+export type ModoRefugios = 'TODOS' | 'PUBLICOS' | 'NENHUM'
+
+/** Corpo de POST /simulacoes. */
+export interface CenarioSimulacao {
+  nome?: string
+  modeloId?: string
+  icMaxPorDia: number[]
+  dataInicio?: string
+  refugios: ModoRefugios
+  agentesPorUbs: number
+  contatosPorAgenteDia: number
+  fatorK: number
+  distrito?: string
+}
+
+export type StatusSimulacao = 'PROCESSANDO' | 'CONCLUIDA' | 'ERRO'
+
+export interface SimulacaoResumo {
+  id: number
+  nome: string
+  status: StatusSimulacao
+  qtdDias: number
+  nivelMaximo: NivelCalor
+  diasExtrapolados: number
+}
+
+export interface DiaSimulado {
+  dia: number
+  data: string | null
+  icMaxC: number
+  nivel: NivelCalor
+  nome: string
+  regra: string
+  extrapolacao: boolean
+  pessoasNaLista: number | null
+  contatadas: number | null
+  pendentes: number | null
+  semRefugio800m: number | null
+}
+
+export interface SetorSimulado {
+  dia: number
+  codigoSetor: string
+  pessoasNaLista: number
+  contatadas: number
+  pendentes: number
+  semRefugio800m: number
+  /** IC do setor estimado com o fator k (estimativa). */
+  icEstimadoC: number | null
+}
+
+/** Resultado de GET /simulacoes/{id}. */
+export interface SimulacaoDetalhe {
+  id: number
+  nome: string
+  status: StatusSimulacao
+  criadoEm: string
+  cenario: {
+    modeloId: string | null
+    dataInicio: string | null
+    qtdDias: number
+    refugios: ModoRefugios
+    agentesPorUbs: number
+    contatosPorAgenteDia: number
+    fatorK: number
+    distrito: string | null
+  }
+  versaoLimiar: string
+  maxHistoricoIcC: number | null
+  nivelMaximo: NivelCalor
+  diasExtrapolados: number
+  dias: DiaSimulado[]
+  setores: SetorSimulado[]
+}
