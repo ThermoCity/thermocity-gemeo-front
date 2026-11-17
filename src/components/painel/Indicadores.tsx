@@ -20,6 +20,8 @@ export function SeloNivel({ nivel, nome }: { nivel: number; nome?: string }) {
   )
 }
 
+const DIA_SEMANA = new Intl.DateTimeFormat('pt-BR', { weekday: 'short' })
+
 /** Faixa de indicadores do “agora”. Nível de calor, lista e território são informações distintas. */
 export function Indicadores({ clima, cobertura, coberturaCarregada, setoresNota5, totalSetores }: Props) {
   const semBuscaAtiva = coberturaCarregada && !cobertura
@@ -44,6 +46,16 @@ export function Indicadores({ clima, cobertura, coberturaCarregada, setoresNota5
           </span>
         )}
         {nivelDaLista && <span className="indicador-nota">nível que gerou a lista do dia</span>}
+        {clima && clima.proximosDias.length > 0 && (
+          <span className="indicador-proximos" aria-label="Próximos dias">
+            {clima.proximosDias.map((d) => (
+              <span key={d.data} title={`${d.nome} · IC máx. ${d.icMaxC.toFixed(1).replace('.', ',')} °C (previsto)`}>
+                {DIA_SEMANA.format(new Date(`${d.data}T12:00:00`)).replace('.', '')}{' '}
+                <b style={{ background: CORES_NC[d.nivel], color: TEXTO_NC[d.nivel] }}>NC{d.nivel}</b>
+              </span>
+            ))}
+          </span>
+        )}
       </div>
       <div className="indicador">
         <span className="indicador-rotulo">Pessoas na lista do dia</span>

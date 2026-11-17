@@ -196,14 +196,15 @@ export const mockApi = {
   servicos: () => dadosBase().then((d) => espera(d.servicos)),
   situacaoAtual: () =>
     espera<SituacaoClima>({
-      hoje: { data: dia(0), nivel: 3, nome: 'Alerta', icMaxC: 36.2, origem: 'PREVISTO' },
+      // Dia de exemplo do vídeo pitch ("Um dia de NC4"); textos iguais aos da API de clima
+      hoje: { data: dia(0), nivel: 4, nome: 'Alto risco', icMaxC: 37.2, origem: 'PREVISTO' },
       proximosDias: [
-        { data: dia(1), nivel: 3, nome: 'Alerta', icMaxC: 35.8, origem: 'PREVISTO' },
-        { data: dia(2), nivel: 4, nome: 'Alto risco', icMaxC: 37.1, origem: 'PREVISTO' },
+        { data: dia(1), nivel: 4, nome: 'Alto risco', icMaxC: 37.6, origem: 'PREVISTO' },
+        { data: dia(2), nivel: 3, nome: 'Alerta', icMaxC: 36.4, origem: 'PREVISTO' },
         { data: dia(3), nivel: 2, nome: 'Atenção', icMaxC: 35.1, origem: 'PREVISTO' },
       ],
-      criterio: 'Índice de calor máximo ≥ 36,0 °C',
-      acaoEsperada: 'Inicia a busca ativa: idosos 70+ nos setores de IPVS 5–6; divulgar refúgios.',
+      criterio: 'IC máx. ≥ 37,0 °C',
+      acaoEsperada: 'Busca ativa ampliada a todos os 60+ dos setores IPVS 4 a 6; UBS em alerta; refúgios abertos.',
       atualizadoEm: agora(),
       desatualizado: false,
     }),

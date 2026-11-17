@@ -35,7 +35,7 @@ jobs:
         env:
           VITE_API_TERRITORIO_URL: 'https://thermocity-base-territorial-api.azurewebsites.net'
           VITE_USE_MOCKS_TERRITORIO: 'false'
-          VITE_USE_MOCKS: 'true'       # false = usa as APIs reais de cadastro e clima
+          VITE_USE_MOCKS: 'false'      # false = usa as APIs reais de cadastro e clima
           VITE_API_JAVA_URL: 'https://thermocity-cadastro-api.azurewebsites.net'
           VITE_API_CLIMA_URL: 'https://thermocity-weather-api.azurewebsites.net'
           VITE_API_TIMEOUT_MS: '90000'

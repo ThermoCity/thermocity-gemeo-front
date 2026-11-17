@@ -14,8 +14,8 @@ export const config = {
   usarMocksTerritorio: (env.VITE_USE_MOCKS_TERRITORIO ?? 'false') === 'true',
   /** API Java de cadastro (Arthur): lista do dia (GET /listas/hoje), contatos e cobertura. Exige o JWT de um gestor. */
   apiJavaUrl: (env.VITE_API_JAVA_URL ?? 'https://thermocity-cadastro-api.azurewebsites.net').replace(/\/$/, ''),
-  /** API de clima (.NET): nível de calor atual e previsto. */
-  apiClimaUrl: (env.VITE_API_CLIMA_URL ?? 'http://localhost:5000').replace(/\/$/, ''),
+  /** API de clima (.NET, GET /api/heat-alerts): nível de calor de hoje e dos próximos dias. */
+  apiClimaUrl: (env.VITE_API_CLIMA_URL ?? 'https://thermocity-weather-api.azurewebsites.net').replace(/\/$/, ''),
   /** true = nível de calor mockado (a API de clima ainda não está publicada). */
   usarMocks,
   /** true = lista do dia mockada. Padrão: segue VITE_USE_MOCKS (false liga a lista real da API de cadastro). */

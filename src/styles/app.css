@@ -261,3 +261,6 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 :root[data-tema='escuro'] .dif-melhor { color: #9cc7e0; }
 .dif-igual { color: var(--texto-suave); }
 
+/* Próximos dias no cartão do nível (API de clima) */
+.indicador-proximos { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--texto-suave); }
+.indicador-proximos b { display: inline-block; border-radius: 4px; padding: 0 4px; font-size: 11px; }
