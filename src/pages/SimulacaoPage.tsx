@@ -9,7 +9,7 @@ import { camadasComparacao } from '../components/simulacao/comparacao'
 import { errosDaApi, formatar, type ErrosCenario } from '../components/simulacao/cenario'
 import { DetalheSetorSimulado } from '../components/simulacao/DetalheSetorSimulado'
 import { FormularioCenario } from '../components/simulacao/FormularioCenario'
-import { ResultadoSimulacao } from '../components/simulacao/ResultadoSimulacao'
+import { piorDia, ResultadoSimulacao } from '../components/simulacao/ResultadoSimulacao'
 import { useDados, type EstadoDados } from '../hooks/useDados'
 import { ApiError, api } from '../services'
 import type { CenarioSimulacao, Servico, SetoresGeoJson, SetorSimulado, SimulacaoDetalhe } from '../types'
@@ -66,9 +66,14 @@ export function SimulacaoPage({ setores, servicos }: Props) {
     try {
       const criada = await api.criarSimulacao(cenario)
       const detalhe = await api.simulacao(criada.id, 1)
+      // o mapa abre no pior dia (mais pessoas sem contato), não no dia 1, que costuma estar vazio
+      const pior = piorDia(detalhe.dias)?.dia ?? 1
+      const setoresDoPior = pior === 1 ? detalhe.setores : (await api.simulacao(criada.id, pior)).setores
       setResultado(detalhe)
-      setDia(1)
-      setSetoresPorDia({ 1: detalhe.setores })
+      setDia(pior)
+      const vistos: Record<number, SetorSimulado[]> = { 1: detalhe.setores }
+      vistos[pior] = setoresDoPior
+      setSetoresPorDia(vistos)
       setErroDia(null)
       requestAnimationFrame(() => {
         resultadoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })

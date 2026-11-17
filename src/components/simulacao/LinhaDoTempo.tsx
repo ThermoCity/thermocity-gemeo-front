@@ -43,9 +43,8 @@ export function LinhaDoTempo({ dias, diaSelecionado, onDia }: Props) {
               </span>
             </span>
             <span className="linha-tempo-num">{n(lista)}</span>
-            <span className="linha-tempo-sub">
-              {n(d.contatadas)} ✓ · {n(d.pendentes)} pend.
-            </span>
+            <span className="linha-tempo-sub">na lista</span>
+            <span className={`linha-tempo-sub${d.pendentes ? ' linha-tempo-pendente' : ''}`}>{n(d.pendentes)} sem contato</span>
             <span className="linha-tempo-rotulo">Dia {d.dia}</span>
           </button>
         )
