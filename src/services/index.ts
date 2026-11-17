@@ -19,6 +19,7 @@ const territorio = config.usarMocksTerritorio
       modelosOndaCalor: mockApi.modelosOndaCalor,
       criarSimulacao: mockApi.criarSimulacao,
       simulacao: mockApi.simulacao,
+      listarSimulacoes: mockApi.listarSimulacoes,
     }
   : territorioApi
 

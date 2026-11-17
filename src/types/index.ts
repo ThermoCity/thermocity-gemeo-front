@@ -191,6 +191,12 @@ export interface SimulacaoResumo {
   qtdDias: number
   nivelMaximo: NivelCalor
   diasExtrapolados: number
+  /** Campos do cenário que vêm na listagem (GET /simulacoes). */
+  modeloId?: string | null
+  refugios?: ModoRefugios
+  agentesPorUbs?: number
+  distrito?: string | null
+  criadoEm?: string
 }
 
 export interface DiaSimulado {

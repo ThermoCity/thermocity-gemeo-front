@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { AvisoServicos } from '../components/mapa/AvisoServicos'
 import { CAMADAS } from '../components/mapa/escalas'
 import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import { camadasDaSimulacao } from '../components/simulacao/camadasSimulacao'
+import { ComparacaoCenarios } from '../components/simulacao/ComparacaoCenarios'
+import { camadasComparacao } from '../components/simulacao/comparacao'
 import { errosDaApi, formatar, type ErrosCenario } from '../components/simulacao/cenario'
 import { DetalheSetorSimulado } from '../components/simulacao/DetalheSetorSimulado'
 import { FormularioCenario } from '../components/simulacao/FormularioCenario'
@@ -41,8 +43,20 @@ export function SimulacaoPage({ setores, servicos }: Props) {
     [setores.dados],
   )
 
+  // comparação A × B (PBI 115): pinta o mapa com a diferença por setor no dia escolhido
+  const [comparacao, setComparacao] = useState<{ a: SimulacaoDetalhe; b: SimulacaoDetalhe; dia: number } | null>(null)
+  const aoComparar = useCallback((c: { a: SimulacaoDetalhe; b: SimulacaoDetalhe; dia: number } | null) => setComparacao(c), [])
+
   const doDia = useMemo(() => new Map((setoresPorDia[dia] ?? []).map((s) => [s.codigoSetor, s])), [setoresPorDia, dia])
-  const camadas = useMemo(() => (resultado ? { ...camadasDaSimulacao(doDia), ...CAMADAS } : CAMADAS), [resultado, doDia])
+  const camadas = useMemo(
+    () => ({
+      ...(comparacao ? camadasComparacao(comparacao.a, comparacao.b, comparacao.dia) : {}),
+      ...(resultado ? camadasDaSimulacao(doDia) : {}),
+      ...CAMADAS,
+    }),
+    [resultado, doDia, comparacao],
+  )
+  const chaveComparacao = comparacao ? `cmp-${comparacao.a.id}-${comparacao.b.id}` : null
   const diaAtual = resultado?.dias.find((d) => d.dia === dia)
 
   const simular = async (cenario: CenarioSimulacao) => {
@@ -145,14 +159,20 @@ export function SimulacaoPage({ setores, servicos }: Props) {
           )}
           {setores.dados && !setores.carregando && (
             <MapaSetores
-              key={resultado ? `sim-${resultado.id}` : 'territorio'}
+              key={chaveComparacao ?? (resultado ? `sim-${resultado.id}` : 'territorio')}
               setores={setores.dados.features}
               servicos={servicos.dados ?? []}
               selecionado={selecionado}
               onSelecionar={setSelecionado}
-              selo={resultado ? `Simulação nº ${resultado.id} · dia ${dia}` : 'Simulação · cenário hipotético'}
+              selo={
+                comparacao
+                  ? `A nº ${comparacao.a.id} × B nº ${comparacao.b.id} · dia ${comparacao.dia}`
+                  : resultado
+                    ? `Simulação nº ${resultado.id} · dia ${dia}`
+                    : 'Simulação · cenário hipotético'
+              }
               camadas={camadas}
-              camadaInicial={resultado ? 'semContato' : 'calor'}
+              camadaInicial={comparacao ? 'difSemContato' : resultado ? 'semContato' : 'calor'}
               linhasDica={linhasDica}
             />
           )}
@@ -168,6 +188,7 @@ export function SimulacaoPage({ setores, servicos }: Props) {
         </div>
       </div>
       <div ref={resultadoRef}>{resultado && <ResultadoSimulacao simulacao={resultado} diaSelecionado={dia} onDia={verDia} />}</div>
+      {setores.dados && <ComparacaoCenarios setores={setores.dados.features} simulacaoAtual={resultado?.id ?? null} onComparacao={aoComparar} />}
     </div>
   )
 }

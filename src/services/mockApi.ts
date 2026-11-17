@@ -246,6 +246,14 @@ export const mockApi = {
     simulacoesDemo.set(id, detalhe)
     return espera<SimulacaoResumo>({ id, nome: detalhe.nome, status: 'CONCLUIDA', qtdDias: dias.length, nivelMaximo: detalhe.nivelMaximo, diasExtrapolados: detalhe.diasExtrapolados }, 600)
   }),
+  listarSimulacoes: () =>
+    espera<SimulacaoResumo[]>(
+      [...simulacoesDemo.values()].reverse().map((s) => ({
+        id: s.id, nome: s.nome, status: s.status, qtdDias: s.cenario.qtdDias, nivelMaximo: s.nivelMaximo,
+        diasExtrapolados: s.diasExtrapolados, modeloId: s.cenario.modeloId, refugios: s.cenario.refugios,
+        agentesPorUbs: s.cenario.agentesPorUbs, distrito: s.cenario.distrito, criadoEm: s.criadoEm,
+      })),
+    ),
   simulacao: (id: number, dia?: number) => {
     const s = simulacoesDemo.get(id)
     if (!s) return Promise.reject(new Error('Simulação não encontrada'))

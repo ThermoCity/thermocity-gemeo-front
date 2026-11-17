@@ -104,6 +104,10 @@ export const territorioApi = {
   criarSimulacao: (cenario: CenarioSimulacao) =>
     requisitar<SimulacaoResumo>(config.apiTerritorioUrl, '/simulacoes', { method: 'POST', body: JSON.stringify(cenario) }),
 
+  /** Simulações já feitas, das mais recentes para as mais antigas (as 50 últimas). */
+  listarSimulacoes: () =>
+    requisitar<{ conteudo: SimulacaoResumo[] }>(config.apiTerritorioUrl, '/simulacoes?page=0&size=50').then((p) => p.conteudo),
+
   /** Resultado da simulação; com `dia`, os setores vêm só daquele dia (resposta bem menor). */
   simulacao: (id: number, dia?: number) =>
     requisitar<SimulacaoDetalhe>(config.apiTerritorioUrl, `/simulacoes/${id}${dia ? `?dia=${dia}` : ''}`),

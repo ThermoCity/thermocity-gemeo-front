@@ -244,3 +244,20 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 /* Atualização automática (PBI 111) */
 .etiqueta-desatualizado { background: var(--alerta-fundo); color: var(--texto); border: 1px solid #b3261e; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
 .aviso-mudanca { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--alerta-fundo); border: 1px solid var(--destaque); border-left-width: 4px; border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+
+/* Comparação A × B (PBI 115) */
+.comparacao { display: flex; flex-direction: column; gap: 10px; }
+.comparacao-escolha { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.comparacao-escolha select { max-width: 100%; min-width: 0; background: var(--superficie); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 8px; }
+.comparacao-escolha .campo-inline { min-width: 0; max-width: 100%; }
+.comparacao-lados { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.comparacao-lado { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+.comparacao-subtitulo { font-size: 14px; margin: 6px 0 0; display: flex; align-items: center; gap: 8px; }
+.tabela-comparacao th[colspan] { text-align: center; }
+.tabela-comparacao tbody td:nth-child(n), .tabela-comparacao thead tr + tr th { text-align: right; }
+.tabela-comparacao tbody td[colspan] { text-align: left; color: var(--texto-suave); }
+.dif-pior { color: var(--destaque); font-weight: 700; }
+.dif-melhor { color: #2f5f7a; font-weight: 700; }
+:root[data-tema='escuro'] .dif-melhor { color: #9cc7e0; }
+.dif-igual { color: var(--texto-suave); }
+
