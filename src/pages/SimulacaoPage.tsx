@@ -121,7 +121,14 @@ export function SimulacaoPage({ setores, servicos }: Props) {
           <header className="cartao-cabecalho">
             <h2 id="titulo-cenario">Cenário</h2>
           </header>
-          <FormularioCenario modelos={modelos} distritos={distritos} enviando={enviando} errosApi={errosApi} onSimular={simular} />
+          <FormularioCenario
+            modelos={modelos}
+            distritos={distritos}
+            enviando={enviando}
+            errosApi={errosApi}
+            onSimular={simular}
+            totalUbs={servicos.dados?.filter((s) => s.tipo === 'UBS').length || undefined}
+          />
           {erroEnvio && (
             <p className="nota estado-erro" role="alert">
               A simulação não foi enviada: {erroEnvio}

@@ -285,3 +285,13 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 .detalhes { margin-top: 8px; }
 .detalhes > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: var(--destaque); padding: 4px 0; }
 .detalhes > summary:focus-visible { outline: none; box-shadow: var(--sombra-foco); border-radius: 4px; }
+
+/* Formulário do cenário em blocos (onda, equipe, refúgios, avançado) */
+.cenario-bloco { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--borda); }
+.cenario-bloco h3 { font-size: 14px; margin: 0; color: var(--texto); }
+.resumo-onda { margin: 0; font-size: 13px; color: var(--texto); }
+.cenario-avancado { display: flex; flex-direction: column; gap: 10px; }
+.cenario-avancado[open] > summary { margin-bottom: 8px; }
+.cenario-avancado > label + label { margin-top: 10px; }
+.cenario-acoes { position: sticky; bottom: -14px; margin: 0 -16px -14px; padding: 10px 16px 14px; background: var(--superficie); border-top: 1px solid var(--borda); }
+.cenario-acoes .botao-primario { width: 100%; }

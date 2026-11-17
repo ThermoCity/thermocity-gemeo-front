@@ -5,6 +5,7 @@ import {
   diasExtrapolados,
   FORM_INICIAL,
   formatar,
+  lerNumero,
   MAX_DIAS,
   MAX_HISTORICO_PADRAO,
   validarCenario,
@@ -19,19 +20,22 @@ interface Props {
   /** Erros devolvidos pela API num 400, já traduzidos para os campos. */
   errosApi: ErrosCenario
   onSimular: (cenario: CenarioSimulacao) => void
+  /** Quantas UBS a cidade tem, para mostrar a capacidade de ligações por dia. */
+  totalUbs?: number
 }
 
 const ROTULO_REFUGIOS: Record<ModoRefugios, string> = {
-  TODOS: 'Todos (públicos e potenciais)',
-  PUBLICOS: 'Só os públicos',
-  NENHUM: 'Nenhum',
+  TODOS: 'Todos: públicos e potenciais',
+  PUBLICOS: 'Só os públicos (já funcionam hoje)',
+  NENHUM: 'Nenhum refúgio aberto',
 }
 
 const icParaTexto = (v: number) => String(v).replace('.', ',')
 
 /** Formulário do cenário: onda de calor (modelo pronto ou personalizada), refúgios, agentes, fator k e região. */
-export function FormularioCenario({ modelos, distritos, enviando, errosApi, onSimular }: Props) {
+export function FormularioCenario({ modelos, distritos, enviando, errosApi, onSimular, totalUbs }: Props) {
   const [form, setForm] = useState<FormCenario>(FORM_INICIAL)
+  const [editarDias, setEditarDias] = useState(false)
   const [errosLocais, setErrosLocais] = useState<ErrosCenario>({})
   const formRef = useRef<HTMLFormElement>(null)
   const escolheuModelo = useRef(false)
@@ -42,6 +46,8 @@ export function FormularioCenario({ modelos, distritos, enviando, errosApi, onSi
 
   const aplicarModelo = (m: ModeloOndaCalor | undefined) => {
     setForm((f) => (m ? { ...f, modeloId: m.id, dias: m.dias.map((d) => icParaTexto(d.icMaxC)) } : { ...f, modeloId: '' }))
+    // onda personalizada: abre os dias para editar
+    if (!m) setEditarDias(true)
     setErrosLocais({})
   }
 
@@ -84,6 +90,15 @@ export function FormularioCenario({ modelos, distritos, enviando, errosApi, onSi
   }
 
   const modeloAtual = lista.find((m) => m.id === form.modeloId)
+  const temErroDia = Object.keys(erros).some((k) => k === 'dias' || k.startsWith('dia-'))
+  const diasAbertos = editarDias || temErroDia
+  const valores = form.dias.map(lerNumero)
+  const pico = Math.max(...valores.map((v) => v ?? -Infinity))
+  const diaPico = valores.indexOf(pico) + 1
+  const agentes = lerNumero(form.agentesPorUbs)
+  const contatos = lerNumero(form.contatosPorAgenteDia)
+  const porUbs = agentes != null && contatos != null && agentes > 0 && contatos > 0 ? agentes * contatos : null
+  const temErroAvancado = Boolean(erros.fatorK || erros.distrito)
   const props = (campo: string) => ({
     'aria-invalid': erros[campo] ? true : undefined,
     'aria-describedby': erros[campo] ? `erro-${campo}` : undefined,
@@ -92,163 +107,201 @@ export function FormularioCenario({ modelos, distritos, enviando, errosApi, onSi
 
   return (
     <form ref={formRef} className="cenario-campos" onSubmit={enviar} noValidate>
-      <label>
-        Onda de calor
-        <select
-          value={form.modeloId}
-          onChange={(e) => aplicarModelo(lista.find((m) => m.id === e.target.value))}
-          disabled={modelos.carregando}
-        >
-          <option value="">Personalizada</option>
-          {episodios.map(([titulo, itens]) => (
-            <optgroup key={titulo} label={titulo}>
-              {itens.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.tipo === 'REAL' ? 'Como aconteceu' : `+ ${formatar(m.acrescimoC, 0)} °C`} · até NC{m.nivelMaximo}
-                  {m.diasExtrapolados > 0 ? ' · extrapolação' : ''}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </label>
-      {modelos.carregando && <span className="nota-campo">Carregando as ondas de calor da A707…</span>}
-      {modelos.erro && (
-        <span className="nota-campo estado-erro">
-          Os modelos prontos não carregaram ({modelos.erro}). Dá para montar a onda à mão.{' '}
-          <button type="button" className="botao-link" onClick={modelos.recarregar}>
-            Tentar de novo
-          </button>
-        </span>
-      )}
-      {modeloAtual && (
-        <span className="nota-campo">
-          {modeloAtual.nome} · {modeloAtual.tipo === 'REAL' ? 'série real da estação INMET A707' : 'variação da onda real'}
-        </span>
-      )}
-
-      <fieldset className="cenario-dias" aria-describedby={erros.dias ? 'erro-dias' : undefined}>
-        <legend>Índice de calor máximo de cada dia (°C)</legend>
-        <div className="grade-dias">
-          {form.dias.map((valor, i) => {
-            const extrapolado = extrapolados.includes(i)
-            return (
-              <div key={i} className={`campo-dia${extrapolado ? ' campo-extrapolado' : ''}`}>
-                <label htmlFor={`dia-${i}`}>Dia {i + 1}</label>
-                <div className="campo-dia-linha">
-                  <input
-                    id={`dia-${i}`}
-                    inputMode="decimal"
-                    value={valor}
-                    onChange={(e) => mudarDia(i, e.target.value)}
-                    {...props(`dia-${i}`)}
-                  />
-                  <button
-                    type="button"
-                    className="botao-icone botao-remover"
-                    onClick={() => removerDia(i)}
-                    disabled={form.dias.length === 1}
-                    aria-label={`Remover o dia ${i + 1}`}
-                  >
-                    ×
-                  </button>
-                </div>
-                {erros[`dia-${i}`] && (
-                  <span id={`erro-dia-${i}`} className="erro-campo">
-                    {erros[`dia-${i}`]}
-                  </span>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <button type="button" className="botao-link" onClick={incluirDia} disabled={form.dias.length >= MAX_DIAS}>
-          + incluir dia
-        </button>
-        {erros.dias && (
-          <span id="erro-dias" className="erro-campo">
-            {erros.dias}
+      <section className="cenario-bloco" aria-labelledby="bloco-onda">
+        <h3 id="bloco-onda">1. Onda de calor</h3>
+        <p className="nota-campo">Quantos dias e quão quente. Comece por uma onda que já aconteceu em Prudente ou monte a sua.</p>
+        <label>
+          <span className="sr-only">Onda de calor</span>
+          <select
+            value={form.modeloId}
+            onChange={(e) => aplicarModelo(lista.find((m) => m.id === e.target.value))}
+            disabled={modelos.carregando}
+          >
+            <option value="">Personalizada</option>
+            {episodios.map(([titulo, itens]) => (
+              <optgroup key={titulo} label={titulo}>
+                {itens.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.tipo === 'REAL' ? 'Como aconteceu' : `+ ${formatar(m.acrescimoC, 0)} °C`} · até NC{m.nivelMaximo}
+                    {m.diasExtrapolados > 0 ? ' · extrapolação' : ''}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        {modelos.carregando && <span className="nota-campo">Carregando as ondas de calor da A707…</span>}
+        {modelos.erro && (
+          <span className="nota-campo estado-erro">
+            Os modelos prontos não carregaram ({modelos.erro}). Dá para montar a onda à mão.{' '}
+            <button type="button" className="botao-link" onClick={modelos.recarregar}>
+              Tentar de novo
+            </button>
           </span>
         )}
-      </fieldset>
-
-      {extrapolados.length > 0 && (
-        <p className="aviso-extrapolacao" role="status">
-          <strong>Acima do máximo histórico da A707 ({formatar(maxHistorico, 2)} °C):</strong>{' '}
-          {extrapolados.map((i) => `dia ${i + 1}`).join(', ')}. Esses dias são extrapolação: a estação nunca registrou um
-          índice de calor tão alto.
-        </p>
-      )}
-
-      <label>
-        Refúgios considerados
-        <select value={form.refugios} onChange={(e) => atualizar('refugios', e.target.value as ModoRefugios)}>
-          {(Object.keys(ROTULO_REFUGIOS) as ModoRefugios[]).map((r) => (
-            <option key={r} value={r}>
-              {ROTULO_REFUGIOS[r]}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <div className="cenario-par">
-        <label>
-          Agentes por UBS
-          <input inputMode="numeric" value={form.agentesPorUbs} onChange={(e) => atualizar('agentesPorUbs', e.target.value)} {...props('agentesPorUbs')} />
-          {erros.agentesPorUbs && <span id="erro-agentesPorUbs" className="erro-campo">{erros.agentesPorUbs}</span>}
-        </label>
-        <label>
-          Contatos por agente/dia
-          <input
-            inputMode="numeric"
-            value={form.contatosPorAgenteDia}
-            onChange={(e) => atualizar('contatosPorAgenteDia', e.target.value)}
-            {...props('contatosPorAgenteDia')}
-          />
-          {erros.contatosPorAgenteDia && (
-            <span id="erro-contatosPorAgenteDia" className="erro-campo">{erros.contatosPorAgenteDia}</span>
+        <p className="resumo-onda">
+          <strong>{form.dias.length} dias</strong>
+          {Number.isFinite(pico) && (
+            <>
+              {' '}
+              · pico de {formatar(pico)} °C no dia {diaPico}
+            </>
           )}
+          {modeloAtual && <span className="nota-campo"> · {modeloAtual.tipo === 'REAL' ? 'série real da estação INMET A707' : 'variação da onda real'}</span>}
+        </p>
+
+        <details className="detalhes" open={diasAbertos} onToggle={(e) => setEditarDias(e.currentTarget.open)}>
+          <summary>Editar o índice de calor de cada dia</summary>
+          <fieldset className="cenario-dias" aria-describedby={erros.dias ? 'erro-dias' : undefined}>
+            <legend>Índice de calor máximo de cada dia (°C)</legend>
+            <div className="grade-dias">
+              {form.dias.map((valor, i) => {
+                const extrapolado = extrapolados.includes(i)
+                return (
+                  <div key={i} className={`campo-dia${extrapolado ? ' campo-extrapolado' : ''}`}>
+                    <label htmlFor={`dia-${i}`}>Dia {i + 1}</label>
+                    <div className="campo-dia-linha">
+                      <input
+                        id={`dia-${i}`}
+                        inputMode="decimal"
+                        value={valor}
+                        onChange={(e) => mudarDia(i, e.target.value)}
+                        {...props(`dia-${i}`)}
+                      />
+                      <button
+                        type="button"
+                        className="botao-icone botao-remover"
+                        onClick={() => removerDia(i)}
+                        disabled={form.dias.length === 1}
+                        aria-label={`Remover o dia ${i + 1}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {erros[`dia-${i}`] && (
+                      <span id={`erro-dia-${i}`} className="erro-campo">
+                        {erros[`dia-${i}`]}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <button type="button" className="botao-link" onClick={incluirDia} disabled={form.dias.length >= MAX_DIAS}>
+              + incluir dia
+            </button>
+            {erros.dias && (
+              <span id="erro-dias" className="erro-campo">
+                {erros.dias}
+              </span>
+            )}
+          </fieldset>
+        </details>
+
+        {extrapolados.length > 0 && (
+          <p className="aviso-extrapolacao" role="status">
+            <strong>Acima do máximo histórico da A707 ({formatar(maxHistorico, 2)} °C):</strong>{' '}
+            {extrapolados.map((i) => `dia ${i + 1}`).join(', ')}. Esses dias são extrapolação: a estação nunca registrou um
+            índice de calor tão alto.
+          </p>
+        )}
+      </section>
+
+      <section className="cenario-bloco" aria-labelledby="bloco-equipe">
+        <h3 id="bloco-equipe">2. Equipe de busca ativa</h3>
+        <p className="nota-campo">Quantas ligações cada UBS consegue fazer por dia. Quem não for contatado passa para o dia seguinte.</p>
+        <div className="cenario-par">
+          <label>
+            Agentes por UBS
+            <input inputMode="numeric" value={form.agentesPorUbs} onChange={(e) => atualizar('agentesPorUbs', e.target.value)} {...props('agentesPorUbs')} />
+            {erros.agentesPorUbs && <span id="erro-agentesPorUbs" className="erro-campo">{erros.agentesPorUbs}</span>}
+          </label>
+          <label>
+            Ligações por agente/dia
+            <input
+              inputMode="numeric"
+              value={form.contatosPorAgenteDia}
+              onChange={(e) => atualizar('contatosPorAgenteDia', e.target.value)}
+              {...props('contatosPorAgenteDia')}
+            />
+            {erros.contatosPorAgenteDia && (
+              <span id="erro-contatosPorAgenteDia" className="erro-campo">{erros.contatosPorAgenteDia}</span>
+            )}
+          </label>
+        </div>
+        {porUbs != null && (
+          <p className="resumo-onda">
+            = <strong>{porUbs.toLocaleString('pt-BR')} ligações por UBS por dia</strong>
+            {totalUbs ? (
+              <span className="nota-campo">
+                {' '}
+                · {(porUbs * totalUbs).toLocaleString('pt-BR')} por dia nas {totalUbs} UBS da cidade
+              </span>
+            ) : null}
+          </p>
+        )}
+      </section>
+
+      <section className="cenario-bloco" aria-labelledby="bloco-refugios">
+        <h3 id="bloco-refugios">3. Refúgios climáticos</h3>
+        <p className="nota-campo">
+          Lugares frescos para onde o idoso pode ir. O resultado conta quem fica a mais de 800 m (em linha reta) do refúgio mais próximo.
+        </p>
+        <label>
+          <span className="sr-only">Refúgios considerados</span>
+          <select value={form.refugios} onChange={(e) => atualizar('refugios', e.target.value as ModoRefugios)}>
+            {(Object.keys(ROTULO_REFUGIOS) as ModoRefugios[]).map((r) => (
+              <option key={r} value={r}>
+                {ROTULO_REFUGIOS[r]}
+              </option>
+            ))}
+          </select>
         </label>
+      </section>
+
+      <details className="detalhes cenario-avancado" open={temErroAvancado || undefined}>
+        <summary>Avançado: região, fator k e nome</summary>
+        <label>
+          Região
+          <select value={form.distrito} onChange={(e) => atualizar('distrito', e.target.value)} {...props('distrito')}>
+            <option value="">Cidade toda</option>
+            {distritos.map((d) => (
+              <option key={d} value={d}>
+                Distrito {d}
+              </option>
+            ))}
+          </select>
+          {erros.distrito && <span id="erro-distrito" className="erro-campo">{erros.distrito}</span>}
+        </label>
+
+        <label>
+          Fator k (estimativa)
+          <input
+            type="number"
+            step="0.05"
+            min="0.1"
+            max="0.5"
+            value={form.fatorK}
+            onChange={(e) => atualizar('fatorK', e.target.value)}
+            {...props('fatorK')}
+          />
+          <span className="nota-campo">
+            Quanto o calor do chão de cada setor (satélite) pesa no calor estimado do bairro. Só muda o mapa de IC estimado; 0,25 é o padrão.
+          </span>
+          {erros.fatorK && <span id="erro-fatorK" className="erro-campo">{erros.fatorK}</span>}
+        </label>
+
+        <label>
+          Nome (opcional)
+          <input value={form.nome} maxLength={120} placeholder={modeloAtual?.nome ?? 'Ex.: Março sem refúgios'} onChange={(e) => atualizar('nome', e.target.value)} />
+        </label>
+      </details>
+
+      <div className="cenario-acoes">
+        <button type="submit" className="botao-primario" disabled={enviando}>
+          {enviando ? 'Simulando…' : 'Simular'}
+        </button>
       </div>
-
-      <label>
-        Região
-        <select value={form.distrito} onChange={(e) => atualizar('distrito', e.target.value)} {...props('distrito')}>
-          <option value="">Cidade toda</option>
-          {distritos.map((d) => (
-            <option key={d} value={d}>
-              Distrito {d}
-            </option>
-          ))}
-        </select>
-        {erros.distrito && <span id="erro-distrito" className="erro-campo">{erros.distrito}</span>}
-      </label>
-
-      <label>
-        Fator k (estimativa)
-        <input
-          type="number"
-          step="0.05"
-          min="0.1"
-          max="0.5"
-          value={form.fatorK}
-          onChange={(e) => atualizar('fatorK', e.target.value)}
-          {...props('fatorK')}
-        />
-        <span className="nota-campo">
-          Quanto da diferença de temperatura de superfície entre setores vira diferença de calor (0,10 a 0,50).
-        </span>
-        {erros.fatorK && <span id="erro-fatorK" className="erro-campo">{erros.fatorK}</span>}
-      </label>
-
-      <label>
-        Nome (opcional)
-        <input value={form.nome} maxLength={120} placeholder={modeloAtual?.nome ?? 'Ex.: Março sem refúgios'} onChange={(e) => atualizar('nome', e.target.value)} />
-      </label>
-
-      <button type="submit" className="botao-primario" disabled={enviando}>
-        {enviando ? 'Simulando…' : 'Simular'}
-      </button>
     </form>
   )
 }
