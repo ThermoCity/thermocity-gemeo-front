@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDados } from '../../hooks/useDados'
 import { api } from '../../services'
 import type { SetorFeature, SimulacaoDetalhe, SimulacaoResumo } from '../../types'
-import { SeloNivel } from '../painel/Indicadores'
-import { formatar } from './cenario'
 import {
   avisosComparacao,
   comSinal,
@@ -11,6 +9,7 @@ import {
   compararPorRegiao,
   compararPorSetor,
   diferenca,
+  diferencasCenario,
   motivoIncomparavel,
   type Par,
 } from './comparacao'
@@ -24,10 +23,15 @@ interface Props {
   simulacaoAtual: number | null
   /** Avisa a página para pintar o mapa com a diferença do dia (ou limpar, com null). */
   onComparacao: (comparacao: { a: SimulacaoDetalhe; b: SimulacaoDetalhe; dia: number } | null) => void
+  /** Pedido vindo do "E se…?": compara essas duas simulações assim que chega (chave muda a cada pedido). */
+  pedido?: { a: number; b: number; chave: number } | null
 }
 
+const hora = (iso?: string) =>
+  iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+
 const rotulo = (s: SimulacaoResumo) =>
-  `nº ${s.id} · ${s.nome} · ${s.qtdDias} dias${s.refugios ? ` · ${REFUGIOS[s.refugios]}` : ''}${s.agentesPorUbs ? ` · ${s.agentesPorUbs} agente(s)/UBS` : ''}`
+  `nº ${s.id} · ${s.nome} · ${s.qtdDias} dias${s.refugios ? ` · ${REFUGIOS[s.refugios]}` : ''}${s.agentesPorUbs ? ` · ${s.agentesPorUbs} agente(s)/UBS` : ''}${s.criadoEm ? ` · ${hora(s.criadoEm)}` : ''}`
 
 /** Diferença com a cor de quem ficou melhor: menos pessoas em B = melhor (azul), mais = pior (laranja). */
 function Diferenca({ par }: { par: Par }) {
@@ -67,8 +71,34 @@ function Cabecalho({ primeira }: { primeira: string }) {
   )
 }
 
+/** Cartão com A, B e a diferença B − A em destaque. */
+function CartaoDiferenca({ rotulo, par, nota }: { rotulo: string; par: Par; nota?: string }) {
+  return (
+    <div className="kpi">
+      <span className="kpi-rotulo">{rotulo}</span>
+      <strong className="kpi-valor">
+        <Diferenca par={par} />
+      </strong>
+      <span className="kpi-nota">
+        A {par.a.toLocaleString('pt-BR')} → B {par.b.toLocaleString('pt-BR')}
+        {nota ? ` ${nota}` : ''}
+      </span>
+    </div>
+  )
+}
+
+/** Uma frase com a resposta: quantas pessoas a mais ou a menos B deixa sem contato e longe de refúgio no pior dia. */
+function conclusao(semContato: Par, semRefugio: Par): string {
+  const parte = (d: number, quem: string, situacao: string) =>
+    d === 0
+      ? `o mesmo número de ${quem} ${situacao}`
+      : `${Math.abs(d).toLocaleString('pt-BR')} ${quem} ${d > 0 ? 'a mais' : 'a menos'} ${situacao}`
+  return `No pior dia, B deixa ${parte(diferenca(semContato), 'pessoas', 'sem contato')} e ${parte(diferenca(semRefugio), 'idosos', 'longe de um refúgio')} do que A.`
+}
+
 /** PBI 115: compara duas simulações (ex.: com e sem refúgios) por dia, por região e por setor. */
-export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao }: Props) {
+export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao, pedido }: Props) {
+  const secaoRef = useRef<HTMLElement>(null)
   const lista = useDados(api.listarSimulacoes)
   const concluidas = useMemo(() => (lista.dados ?? []).filter((s) => s.status === 'CONCLUIDA'), [lista.dados])
   const [idA, setIdA] = useState<number | ''>('')
@@ -103,8 +133,23 @@ export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao }: Pr
     onComparacao(par ? { ...par, dia } : null)
   }, [par, dia, onComparacao])
 
-  const comparar = async () => {
-    if (idA === '' || idB === '') return
+  // "E se…?": a simulação B acabou de rodar; entra na lista e a comparação abre sozinha
+  const chavePedido = pedido?.chave
+  useEffect(() => {
+    if (!pedido) return
+    recarregar()
+    setIdA(pedido.a)
+    setIdB(pedido.b)
+    sugeridaPara.current = simulacaoAtual
+    compararIds(pedido.a, pedido.b, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chavePedido])
+
+  const comparar = () => {
+    if (idA !== '' && idB !== '') compararIds(idA, idB)
+  }
+
+  const compararIds = async (idA: number, idB: number, rolar = false) => {
     setCarregando(true)
     setErro(null)
     setMotivo(null)
@@ -121,6 +166,7 @@ export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao }: Pr
       const porDia = compararPorDia(a, b)
       const pior = porDia.reduce((m, l) => (Math.abs(diferenca(l.semContato)) > Math.abs(diferenca(m.semContato)) ? l : m), porDia[0])
       setDia(pior?.dia ?? 1)
+      if (rolar) requestAnimationFrame(() => secaoRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Não foi possível carregar as simulações')
     } finally {
@@ -142,13 +188,13 @@ export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao }: Pr
   })
 
   return (
-    <section className="cartao comparacao" aria-labelledby="titulo-comparacao">
+    <section ref={secaoRef} className="cartao comparacao" aria-labelledby="titulo-comparacao">
       <header className="cartao-cabecalho">
         <h2 id="titulo-comparacao">Comparar cenários (A × B)</h2>
       </header>
       <p className="nota">
-        Escolha duas simulações com o mesmo número de dias, por exemplo a mesma onda de calor com e sem refúgios. B − A negativo (azul) quer dizer
-        que B deixa menos pessoas desassistidas.
+        O jeito mais rápido é o botão “E se…?” do resultado. Aqui dá para escolher quaisquer duas simulações com o mesmo número de dias. B − A
+        negativo (azul) quer dizer que B deixa menos pessoas desassistidas.
       </p>
 
       {lista.carregando && <p className="estado-vazio">Carregando simulações…</p>}
@@ -216,129 +262,122 @@ export function ComparacaoCenarios({ setores, simulacaoAtual, onComparacao }: Pr
 
       {par && (
         <>
+          <div className="comparacao-muda">
+            <strong>O que muda de A para B:</strong>
+            <ul>
+              {diferencasCenario(par.a, par.b).map((d) => (
+                <li key={d}>{d}</li>
+              ))}
+            </ul>
+            <span className="nota-campo">
+              A = nº {par.a.id} · {par.a.nome} &nbsp;|&nbsp; B = nº {par.b.id} · {par.b.nome}
+            </span>
+          </div>
+
           {avisos.map((a) => (
             <p key={a} className="aviso-extrapolacao">
               {a}
             </p>
           ))}
 
-          <div className="comparacao-lados">
-            {(['a', 'b'] as const).map((lado) => {
-              const s = par[lado]
-              const c = s.cenario
-              return (
-                <div key={lado} className="comparacao-lado">
-                  <strong>
-                    {lado.toUpperCase()} · nº {s.id} · {s.nome}
-                  </strong>
-                  <span className="nota-campo">
-                    {REFUGIOS[c.refugios]} · {c.agentesPorUbs} agente(s)/UBS × {c.contatosPorAgenteDia} contatos/dia · k = {formatar(c.fatorK, 2)}
-                    {c.distrito ? ` · ${c.distrito}` : ''}
-                  </span>
-                  <SeloNivel nivel={s.nivelMaximo} nome="máximo" />
-                </div>
-              )
-            })}
+          <p className="resultado-manchete">{conclusao(pico('semContato'), pico('semRefugio'))}</p>
+
+          <div className="resultado-kpis">
+            <CartaoDiferenca rotulo="Sem contato no pior dia" par={pico('semContato')} />
+            <CartaoDiferenca rotulo="Idosos longe de um refúgio no pior dia" par={pico('semRefugio')} />
+            <CartaoDiferenca rotulo="Pessoas sem contato somando os dias" par={total('semContato')} nota="pessoas-dia" />
           </div>
 
-          <div className="tabela-rolagem">
-            <table className="tabela-resultado tabela-comparacao">
-              <caption className="sr-only">Indicadores dos dois cenários somando todos os dias</caption>
-              <Cabecalho primeira="Indicador" />
-              <tbody>
-                <tr>
-                  <th scope="row">Pico em um dia</th>
-                  <Celulas par={pico('semRefugio')} />
-                  <Celulas par={pico('semContato')} />
-                </tr>
-                <tr>
-                  <th scope="row">Soma dos dias (pessoas-dia)</th>
-                  <Celulas par={total('semRefugio')} />
-                  <Celulas par={total('semContato')} />
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <h3 className="comparacao-subtitulo">Por dia</h3>
-          <div className="tabela-rolagem">
-            <table className="tabela-resultado tabela-comparacao">
-              <Cabecalho primeira="Dia" />
-              <tbody>
+          <div className="comparacao-dia">
+            <label className="campo-inline">
+              <span>Dia no mapa e nos detalhes</span>
+              <select value={dia} onChange={(e) => setDia(Number(e.target.value))}>
                 {porDia.map((l) => (
-                  <tr key={l.dia} className={l.dia === dia ? 'linha-ativa' : undefined}>
-                    <th scope="row">
-                      <button type="button" className="botao-link" onClick={() => setDia(l.dia)} aria-label={`Ver o dia ${l.dia} por região e no mapa`}>
-                        Dia {l.dia}
-                      </button>{' '}
-                      <small>
-                        NC{l.nivelA}
-                        {l.nivelB !== l.nivelA && ` / NC${l.nivelB}`}
-                      </small>
-                    </th>
-                    <Celulas par={l.semRefugio} />
-                    <Celulas par={l.semContato} />
-                  </tr>
+                  <option key={l.dia} value={l.dia}>
+                    Dia {l.dia} · NC{l.nivelA}
+                    {l.nivelB !== l.nivelA ? ` / NC${l.nivelB}` : ''} · B − A sem contato: {comSinal(diferenca(l.semContato))}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </label>
+            <span className="nota-campo">O mapa ganhou as camadas “A × B” com a diferença de cada setor neste dia.</span>
           </div>
 
-          <h3 className="comparacao-subtitulo">
-            Por região no dia{' '}
-            <select value={dia} onChange={(e) => setDia(Number(e.target.value))} aria-label="Dia da comparação por região">
-              {porDia.map((l) => (
-                <option key={l.dia} value={l.dia}>
-                  {l.dia}
-                </option>
-              ))}
-            </select>
-          </h3>
-          <div className="tabela-rolagem">
-            <table className="tabela-resultado tabela-comparacao">
-              <Cabecalho primeira="Distrito" />
-              <tbody>
-                {porRegiao.map((l) => (
-                  <tr key={l.regiao}>
-                    <th scope="row">{l.regiao}</th>
-                    <Celulas par={l.semRefugio} />
-                    <Celulas par={l.semContato} />
-                  </tr>
-                ))}
-                {porRegiao.length === 0 && (
-                  <tr>
-                    <td colSpan={7}>Ninguém na lista neste dia nos dois cenários.</td>
-                  </tr>
+          <details className="detalhes">
+            <summary>Detalhes: por dia, por distrito e por setor</summary>
+
+            <h3 className="comparacao-subtitulo">Por dia</h3>
+            <div className="tabela-rolagem">
+              <table className="tabela-resultado tabela-comparacao">
+                <Cabecalho primeira="Dia" />
+                <tbody>
+                  {porDia.map((l) => (
+                    <tr key={l.dia} className={l.dia === dia ? 'linha-ativa' : undefined}>
+                      <th scope="row">
+                        <button type="button" className="botao-link" onClick={() => setDia(l.dia)} aria-label={`Ver o dia ${l.dia} por região e no mapa`}>
+                          Dia {l.dia}
+                        </button>{' '}
+                        <small>
+                          NC{l.nivelA}
+                          {l.nivelB !== l.nivelA && ` / NC${l.nivelB}`}
+                        </small>
+                      </th>
+                      <Celulas par={l.semRefugio} />
+                      <Celulas par={l.semContato} />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h3 className="comparacao-subtitulo">Por distrito no dia {dia}</h3>
+            <div className="tabela-rolagem">
+              <table className="tabela-resultado tabela-comparacao">
+                <Cabecalho primeira="Distrito" />
+                <tbody>
+                  {porRegiao.map((l) => (
+                    <tr key={l.regiao}>
+                      <th scope="row">{l.regiao}</th>
+                      <Celulas par={l.semRefugio} />
+                      <Celulas par={l.semContato} />
+                    </tr>
+                  ))}
+                  {porRegiao.length === 0 && (
+                    <tr>
+                      <td colSpan={7}>Ninguém na lista neste dia nos dois cenários.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {porSetor.length > 0 && (
+              <>
+                <h3 className="comparacao-subtitulo">Setores que mais mudam no dia {dia}</h3>
+                <div className="tabela-rolagem">
+                  <table className="tabela-resultado tabela-comparacao">
+                    <Cabecalho primeira="Setor" />
+                    <tbody>
+                      {porSetor.slice(0, MAX_SETORES).map((l) => (
+                        <tr key={l.codigo}>
+                          <th scope="row">
+                            {l.codigo.slice(-4)} <small>{l.regiao}</small>
+                          </th>
+                          <Celulas par={l.semRefugio} />
+                          <Celulas par={l.semContato} />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {porSetor.length > MAX_SETORES && (
+                  <p className="nota">
+                    Os {MAX_SETORES} de {porSetor.length} setores com diferença.
+                  </p>
                 )}
-              </tbody>
-            </table>
-          </div>
-
-          {porSetor.length > 0 && (
-            <>
-              <h3 className="comparacao-subtitulo">Setores que mais mudam no dia {dia}</h3>
-              <div className="tabela-rolagem">
-                <table className="tabela-resultado tabela-comparacao">
-                  <Cabecalho primeira="Setor" />
-                  <tbody>
-                    {porSetor.slice(0, MAX_SETORES).map((l) => (
-                      <tr key={l.codigo}>
-                        <th scope="row">
-                          {l.codigo.slice(-4)} <small>{l.regiao}</small>
-                        </th>
-                        <Celulas par={l.semRefugio} />
-                        <Celulas par={l.semContato} />
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="nota">
-                {porSetor.length > MAX_SETORES ? `Os ${MAX_SETORES} de ${porSetor.length} setores com diferença. ` : ''}O mapa ganhou as camadas
-                “A × B” com a diferença de cada setor neste dia.
-              </p>
-            </>
-          )}
+              </>
+            )}
+          </details>
         </>
       )}
     </section>

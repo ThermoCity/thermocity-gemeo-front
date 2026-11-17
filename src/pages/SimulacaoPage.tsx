@@ -5,6 +5,7 @@ import { EstadoMapa } from '../components/mapa/EstadoMapa'
 import { MapaSetores } from '../components/mapa/MapaSetores'
 import { camadasDaSimulacao } from '../components/simulacao/camadasSimulacao'
 import { ComparacaoCenarios } from '../components/simulacao/ComparacaoCenarios'
+import { EseCenario } from '../components/simulacao/EseCenario'
 import { camadasComparacao } from '../components/simulacao/comparacao'
 import { errosDaApi, formatar, type ErrosCenario } from '../components/simulacao/cenario'
 import { DetalheSetorSimulado } from '../components/simulacao/DetalheSetorSimulado'
@@ -45,6 +46,23 @@ export function SimulacaoPage({ setores, servicos }: Props) {
 
   // comparação A × B (PBI 115): pinta o mapa com a diferença por setor no dia escolhido
   const [comparacao, setComparacao] = useState<{ a: SimulacaoDetalhe; b: SimulacaoDetalhe; dia: number } | null>(null)
+  // "E se…?": roda o cenário B e pede a comparação com o resultado na tela
+  const [pedidoComparacao, setPedidoComparacao] = useState<{ a: number; b: number; chave: number } | null>(null)
+  const [enviandoB, setEnviandoB] = useState(false)
+  const [erroB, setErroB] = useState<string | null>(null)
+  const simularVariante = async (cenarioB: CenarioSimulacao) => {
+    if (!resultado) return
+    setEnviandoB(true)
+    setErroB(null)
+    try {
+      const criada = await api.criarSimulacao(cenarioB)
+      setPedidoComparacao({ a: resultado.id, b: criada.id, chave: Date.now() })
+    } catch (e) {
+      setErroB(e instanceof Error ? e.message : 'Não foi possível rodar o cenário B')
+    } finally {
+      setEnviandoB(false)
+    }
+  }
   const aoComparar = useCallback((c: { a: SimulacaoDetalhe; b: SimulacaoDetalhe; dia: number } | null) => setComparacao(c), [])
 
   const doDia = useMemo(() => new Map((setoresPorDia[dia] ?? []).map((s) => [s.codigoSetor, s])), [setoresPorDia, dia])
@@ -200,7 +218,15 @@ export function SimulacaoPage({ setores, servicos }: Props) {
         </div>
       </div>
       <div ref={resultadoRef}>{resultado && <ResultadoSimulacao simulacao={resultado} diaSelecionado={dia} onDia={verDia} />}</div>
-      {setores.dados && <ComparacaoCenarios setores={setores.dados.features} simulacaoAtual={resultado?.id ?? null} onComparacao={aoComparar} />}
+      {resultado && <EseCenario key={resultado.id} base={resultado} enviando={enviandoB} erro={erroB} onSimular={simularVariante} />}
+      {setores.dados && (
+        <ComparacaoCenarios
+          setores={setores.dados.features}
+          simulacaoAtual={resultado?.id ?? null}
+          onComparacao={aoComparar}
+          pedido={pedidoComparacao}
+        />
+      )}
     </div>
   )
 }

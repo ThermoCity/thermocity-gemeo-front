@@ -37,14 +37,41 @@ export function motivoIncomparavel(a: SimulacaoDetalhe, b: SimulacaoDetalhe): st
   if (a.cenario.qtdDias !== b.cenario.qtdDias) {
     return `Só é possível comparar cenários com o mesmo número de dias: A tem ${a.cenario.qtdDias} e B tem ${b.cenario.qtdDias}.`
   }
+  if (diferencasCenario(a, b).length === 0) {
+    return 'As duas simulações têm exatamente os mesmos parâmetros, então a diferença seria zero. Use "E se…?" no resultado para mudar uma coisa.'
+  }
   return null
 }
 
-/** Avisos que não impedem a comparação, mas mudam a leitura (ex.: ondas de calor diferentes). */
+const REFUGIOS = { TODOS: 'todos os refúgios', PUBLICOS: 'só públicos', NENHUM: 'nenhum refúgio' } as const
+const fmt = (n: number, casas = 1) => n.toFixed(casas).replace('.', ',')
+
+/** O que muda de A para B, em frases curtas ("refúgios: todos → nenhum"). Vazio = cenários iguais. */
+export function diferencasCenario(a: SimulacaoDetalhe, b: SimulacaoDetalhe): string[] {
+  const ca = a.cenario
+  const cb = b.cenario
+  const d: string[] = []
+  const deltas = a.dias.map((da, i) => (b.dias[i]?.icMaxC ?? da.icMaxC) - da.icMaxC)
+  if (deltas.some((x) => Math.abs(x) > 0.005)) {
+    const constante = deltas.every((x) => Math.abs(x - deltas[0]) < 0.05)
+    d.push(constante ? `calor: ${deltas[0] > 0 ? '+' : '−'}${fmt(Math.abs(deltas[0]))} °C em todos os dias` : 'onda de calor diferente')
+  }
+  if (ca.refugios !== cb.refugios) d.push(`refúgios: ${REFUGIOS[ca.refugios]} → ${REFUGIOS[cb.refugios]}`)
+  if (ca.agentesPorUbs !== cb.agentesPorUbs) d.push(`agentes por UBS: ${ca.agentesPorUbs} → ${cb.agentesPorUbs}`)
+  if (ca.contatosPorAgenteDia !== cb.contatosPorAgenteDia) {
+    d.push(`ligações por agente/dia: ${ca.contatosPorAgenteDia} → ${cb.contatosPorAgenteDia}`)
+  }
+  if ((ca.distrito ?? '') !== (cb.distrito ?? '')) d.push(`região: ${ca.distrito ?? 'cidade toda'} → ${cb.distrito ?? 'cidade toda'}`)
+  if (Math.abs(ca.fatorK - cb.fatorK) > 0.001) d.push(`fator k: ${fmt(ca.fatorK, 2)} → ${fmt(cb.fatorK, 2)}`)
+  return d
+}
+
+/** Avisos que não impedem a comparação, mas mudam a leitura (ex.: mais de uma coisa mudou). */
 export function avisosComparacao(a: SimulacaoDetalhe, b: SimulacaoDetalhe): string[] {
   const avisos: string[] = []
-  const mesmaOnda = a.dias.every((d, i) => d.icMaxC === b.dias[i]?.icMaxC)
-  if (!mesmaOnda) avisos.push('As ondas de calor são diferentes: a diferença mistura o efeito do clima com o dos recursos.')
+  if (diferencasCenario(a, b).length > 1) {
+    avisos.push('Mais de uma coisa muda de A para B: a diferença mistura os efeitos. Para isolar um efeito, mude uma coisa só.')
+  }
   if ((a.cenario.distrito ?? '') !== (b.cenario.distrito ?? '')) {
     avisos.push('Os recortes são diferentes (cidade toda × distrito): os totais cobrem áreas diferentes.')
   }

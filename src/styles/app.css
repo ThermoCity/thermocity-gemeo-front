@@ -295,3 +295,19 @@ fieldset:disabled .botao-primario { opacity: 0.55; cursor: not-allowed; }
 .cenario-avancado > label + label { margin-top: 10px; }
 .cenario-acoes { position: sticky; bottom: -14px; margin: 0 -16px -14px; padding: 10px 16px 14px; background: var(--superficie); border-top: 1px solid var(--borda); }
 .cenario-acoes .botao-primario { width: 100%; }
+
+/* E se…? e a manchete da comparação */
+.ese-chamada { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ese-chamada h2 { font-size: 16px; }
+.ese-opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.ese-opcao { display: flex; flex-direction: column; gap: 4px; border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.ese-opcao.ativa { border: 2px solid var(--destaque); padding: 9px 11px; }
+.ese-opcao input[type='radio'] { position: absolute; opacity: 0; pointer-events: none; }
+.ese-opcao:focus-within { box-shadow: var(--sombra-foco); }
+.ese-titulo { font-weight: 700; }
+.ese-opcao select, .ese-opcao input:not([type='radio']) { background: var(--superficie); color: var(--texto); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; }
+.ese-resumo { margin: 0 0 10px; font-size: 14px; }
+.comparacao-muda { border-left: 4px solid var(--destaque); background: var(--fundo); border-radius: 0 8px 8px 0; padding: 8px 12px; font-size: 14px; }
+.comparacao-muda ul { margin: 4px 0; padding-left: 18px; }
+.comparacao-dia { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.comparacao-dia select { background: var(--superficie); color: var(--texto); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 13px; max-width: 100%; }
